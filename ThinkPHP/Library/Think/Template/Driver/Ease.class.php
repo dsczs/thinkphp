@@ -25,13 +25,13 @@ class Ease
     public function fetch($templateFile, $var)
     {
         $templateFile = substr($templateFile, strlen(THEME_PATH), -5);
-        $CacheDir     = substr(CACHE_PATH, 0, -1);
-        $TemplateDir  = substr(THEME_PATH, 0, -1);
+        $CacheDir = substr(CACHE_PATH, 0, -1);
+        $TemplateDir = substr(THEME_PATH, 0, -1);
         vendor('EaseTemplate.template#ease');
         $config = array(
-            'CacheDir'    => $CacheDir,
+            'CacheDir' => $CacheDir,
             'TemplateDir' => $TemplateDir,
-            'TplType'     => 'html',
+            'TplType' => 'html',
         );
         if (C('TMPL_ENGINE_CONFIG')) {
             $config = array_merge($config, C('TMPL_ENGINE_CONFIG'));

@@ -41,6 +41,7 @@ class UpgradeNoticeBehavior
     protected $httpDesc_;
     protected $accesskey_;
     protected $secretkey_;
+
     public function run(&$params)
     {
         if (C('UPGRADE_NOTICE_ON') && (!S('think_upgrade_interval') || C('UPGRADE_NOTICE_DEBUG'))) {
@@ -52,11 +53,11 @@ class UpgradeNoticeBehavior
                 }
                 return;
             }
-            $akey             = C('UPGRADE_NOTICE_AKEY', null, '');
-            $skey             = C('UPGRADE_NOTICE_SKEY', null, '');
+            $akey = C('UPGRADE_NOTICE_AKEY', null, '');
+            $skey = C('UPGRADE_NOTICE_SKEY', null, '');
             $this->accesskey_ = $akey ? $akey : (defined('SAE_ACCESSKEY') ? SAE_ACCESSKEY : '');
             $this->secretkey_ = $skey ? $skey : (defined('SAE_SECRETKEY') ? SAE_SECRETKEY : '');
-            $current_version  = C('UPGRADE_CURRENT_VERSION', null, 0);
+            $current_version = C('UPGRADE_CURRENT_VERSION', null, 0);
             //读取接口
             $info = $this->send('http://sinaclouds.sinaapp.com/thinkapi/upgrade.php?v=' . $current_version);
             if ($info['version'] != $current_version) {
@@ -68,34 +69,7 @@ class UpgradeNoticeBehavior
             S('think_upgrade_interval', true, C('UPGRADE_NOTICE_CHECK_INTERVAL', null, 604800));
         }
     }
-    private function sendSms($msg)
-    {
-        $timestamp = time();
-        $url       = 'http://inno.smsinter.sina.com.cn/sae_sms_service/sendsms.php'; //发送短信的接口地址
-        $content   = "FetchUrl" . $url . "TimeStamp" . $timestamp . "AccessKey" . $this->accesskey_;
-        $signature = (base64_encode(hash_hmac('sha256', $content, $this->secretkey_, true)));
-        $headers   = array(
-            "FetchUrl: $url",
-            "AccessKey: " . $this->accesskey_,
-            "TimeStamp: " . $timestamp,
-            "Signature: $signature",
-        );
-        $data = array(
-            'mobile'   => C('UPGRADE_NOTICE_MOBILE', null, ''),
-            'msg'      => $msg,
-            'encoding' => 'UTF-8',
-        );
-        if (!$ret = $this->send('http://g.apibus.io', $data, $headers)) {
-            return false;
-        }
-        if (isset($ret['ApiBusError'])) {
-            trace('errno:' . $ret['ApiBusError']['errcode'] . ',errmsg:' . $ret['ApiBusError']['errdesc'], '升级通知出错', 'NOTIC', true);
 
-            return false;
-        }
-
-        return true;
-    }
     private function send($url, $params = array(), $headers = array())
     {
         $ch = curl_init();
@@ -124,5 +98,34 @@ class UpgradeNoticeBehavior
         }
 
         return $ret;
+    }
+
+    private function sendSms($msg)
+    {
+        $timestamp = time();
+        $url = 'http://inno.smsinter.sina.com.cn/sae_sms_service/sendsms.php'; //发送短信的接口地址
+        $content = "FetchUrl" . $url . "TimeStamp" . $timestamp . "AccessKey" . $this->accesskey_;
+        $signature = (base64_encode(hash_hmac('sha256', $content, $this->secretkey_, true)));
+        $headers = array(
+            "FetchUrl: $url",
+            "AccessKey: " . $this->accesskey_,
+            "TimeStamp: " . $timestamp,
+            "Signature: $signature",
+        );
+        $data = array(
+            'mobile' => C('UPGRADE_NOTICE_MOBILE', null, ''),
+            'msg' => $msg,
+            'encoding' => 'UTF-8',
+        );
+        if (!$ret = $this->send('http://g.apibus.io', $data, $headers)) {
+            return false;
+        }
+        if (isset($ret['ApiBusError'])) {
+            trace('errno:' . $ret['ApiBusError']['errcode'] . ',errmsg:' . $ret['ApiBusError']['errdesc'], '升级通知出错', 'NOTIC', true);
+
+            return false;
+        }
+
+        return true;
     }
 }

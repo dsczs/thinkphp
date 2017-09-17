@@ -31,11 +31,11 @@ class Memcached extends Cache
         }
 
         $options = array_merge(array(
-            'servers'     => C('MEMCACHED_SERVER') ?: null,
+            'servers' => C('MEMCACHED_SERVER') ?: null,
             'lib_options' => C('MEMCACHED_LIB') ?: null,
         ), $options);
 
-        $this->options           = $options;
+        $this->options = $options;
         $this->options['expire'] = isset($options['expire']) ? $options['expire'] : C('DATA_CACHE_TIME');
         $this->options['prefix'] = isset($options['prefix']) ? $options['prefix'] : C('DATA_CACHE_PREFIX');
         $this->options['length'] = isset($options['length']) ? $options['length'] : 0;
@@ -61,8 +61,8 @@ class Memcached extends Cache
      * 写入缓存
      * @access public
      * @param string $name 缓存变量名
-     * @param mixed $value  存储数据
-     * @param integer $expire  有效时间（秒）
+     * @param mixed $value 存储数据
+     * @param integer $expire 有效时间（秒）
      * @return boolean
      */
     public function set($name, $value, $expire = null)
@@ -93,8 +93,8 @@ class Memcached extends Cache
     {
         $name = $this->options['prefix'] . $name;
         return false === $ttl ?
-        $this->handler->delete($name) :
-        $this->handler->delete($name, $ttl);
+            $this->handler->delete($name) :
+            $this->handler->delete($name, $ttl);
     }
 
     /**

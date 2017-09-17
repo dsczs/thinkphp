@@ -37,11 +37,11 @@ class Db extends Cache
                 'table' => C('DATA_CACHE_TABLE'),
             );
         }
-        $this->options           = $options;
+        $this->options = $options;
         $this->options['prefix'] = isset($options['prefix']) ? $options['prefix'] : C('DATA_CACHE_PREFIX');
         $this->options['length'] = isset($options['length']) ? $options['length'] : 0;
         $this->options['expire'] = isset($options['expire']) ? $options['expire'] : C('DATA_CACHE_TIME');
-        $this->handler           = \Think\Db::getInstance();
+        $this->handler = \Think\Db::getInstance();
     }
 
     /**
@@ -79,8 +79,8 @@ class Db extends Cache
      * 写入缓存
      * @access public
      * @param string $name 缓存变量名
-     * @param mixed $value  存储数据
-     * @param integer $expire  有效时间（秒）
+     * @param mixed $value 存储数据
+     * @param integer $expire 有效时间（秒）
      * @return boolean
      */
     public function set($name, $value, $expire = null)

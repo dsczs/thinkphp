@@ -14,32 +14,29 @@ use Think\Upload\Driver\Bcs\BaiduBcs;
 
 class Bcs
 {
+    const DEFAULT_URL = 'bcs.duapp.com';
+    public $config = array(
+        'AccessKey' => '',
+        'SecretKey' => '', //百度云服务器
+        'bucket' => '', //空间名称
+        'rename' => false,
+        'timeout' => 3600, //超时时间
+    );
+    public $bcs = null;
     /**
      * 上传文件根目录
      * @var string
      */
     private $rootPath;
-    const DEFAULT_URL = 'bcs.duapp.com';
-
     /**
      * 上传错误信息
      * @var string
      */
     private $error = '';
 
-    public $config = array(
-        'AccessKey' => '',
-        'SecretKey' => '', //百度云服务器
-        'bucket'    => '', //空间名称
-        'rename'    => false,
-        'timeout'   => 3600, //超时时间
-    );
-
-    public $bcs = null;
-
     /**
      * 构造函数，用于设置上传根路径
-     * @param array  $config FTP配置
+     * @param array $config FTP配置
      */
     public function __construct($config)
     {
@@ -56,7 +53,7 @@ class Bcs
 
     /**
      * 检测上传根目录(百度云上传时支持自动创建目录，直接返回)
-     * @param string $rootpath   根目录
+     * @param string $rootpath 根目录
      * @return boolean true-检测通过，false-检测失败
      */
     public function checkRootPath($rootpath)
@@ -88,31 +85,31 @@ class Bcs
 
     /**
      * 保存指定文件
-     * @param  array   $file    保存的文件信息
+     * @param  array $file 保存的文件信息
      * @param  boolean $replace 同名文件是否覆盖
      * @return boolean          保存状态，true-成功，false-失败
      */
     public function save(&$file, $replace = true)
     {
-        $opt             = array();
-        $opt['acl']      = BaiduBCS::BCS_SDK_ACL_TYPE_PUBLIC_WRITE;
+        $opt = array();
+        $opt['acl'] = BaiduBCS::BCS_SDK_ACL_TYPE_PUBLIC_WRITE;
         $opt['curlopts'] = array(
             CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_TIMEOUT        => 1800,
+            CURLOPT_TIMEOUT => 1800,
         );
-        $object      = "/{$file['savepath']}{$file['savename']}";
-        $response    = $this->bcs->create_object($this->config['bucket'], $object, $file['tmp_name'], $opt);
-        $url         = $this->download($object);
+        $object = "/{$file['savepath']}{$file['savename']}";
+        $response = $this->bcs->create_object($this->config['bucket'], $object, $file['tmp_name'], $opt);
+        $url = $this->download($object);
         $file['url'] = $url;
         return $response->isOK() ? true : false;
     }
 
     public function download($file)
     {
-        $file        = str_replace('./', '/', $file);
-        $opt         = array();
+        $file = str_replace('./', '/', $file);
+        $opt = array();
         $opt['time'] = mktime('2049-12-31'); //这是最长有效时间!--
-        $response    = $this->bcs->generate_get_object_url($this->config['bucket'], $file, $opt);
+        $response = $this->bcs->generate_get_object_url($this->config['bucket'], $file, $opt);
         return $response;
     }
 
@@ -126,11 +123,39 @@ class Bcs
     }
 
     /**
+     * 生成请求签名
+     * @return string          请求签名
+     */
+    private function sign($method, $Bucket, $object = '/', $size = '')
+    {
+        if (!$size) {
+            $size = $this->config['size'];
+        }
+
+        $param = array(
+            'ak' => $this->config['AccessKey'],
+            'sk' => $this->config['SecretKey'],
+            'size' => $size,
+            'bucket' => $Bucket,
+            'host' => self::DEFAULT_URL,
+            'date' => time() + $this->config['timeout'],
+            'ip' => '',
+            'object' => $object,
+        );
+        $response = $this->request($this->apiurl . '?' . http_build_query($param), 'POST');
+        if ($response) {
+            $response = json_decode($response, true);
+        }
+
+        return $response['content'][$method];
+    }
+
+    /**
      * 请求百度云服务器
-     * @param  string   $path    请求的PATH
-     * @param  string   $method  请求方法
-     * @param  array    $headers 请求header
-     * @param  resource $body    上传文件资源
+     * @param  string $path 请求的PATH
+     * @param  string $method 请求方法
+     * @param  array $headers 请求header
+     * @param  resource $body 上传文件资源
      * @return boolean
      */
     private function request($path, $method, $headers = null, $body = null)
@@ -145,7 +170,7 @@ class Bcs
         }
 
         $length = 0;
-        $date   = gmdate('D, d M Y H:i:s \G\M\T');
+        $date = gmdate('D, d M Y H:i:s \G\M\T');
 
         if (!is_null($body)) {
             if (is_resource($body)) {
@@ -186,7 +211,7 @@ class Bcs
         }
 
         $response = curl_exec($ch);
-        $status   = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
         list($header, $body) = explode("\r\n\r\n", $response, 2);
 
@@ -215,43 +240,15 @@ class Bcs
     }
 
     /**
-     * 生成请求签名
-     * @return string          请求签名
-     */
-    private function sign($method, $Bucket, $object = '/', $size = '')
-    {
-        if (!$size) {
-            $size = $this->config['size'];
-        }
-
-        $param = array(
-            'ak'     => $this->config['AccessKey'],
-            'sk'     => $this->config['SecretKey'],
-            'size'   => $size,
-            'bucket' => $Bucket,
-            'host'   => self::DEFAULT_URL,
-            'date'   => time() + $this->config['timeout'],
-            'ip'     => '',
-            'object' => $object,
-        );
-        $response = $this->request($this->apiurl . '?' . http_build_query($param), 'POST');
-        if ($response) {
-            $response = json_decode($response, true);
-        }
-
-        return $response['content'][$method];
-    }
-
-    /**
      * 获取请求错误信息
      * @param  string $header 请求返回头信息
      */
     private function error($header)
     {
-        list($status, $stash)     = explode("\r\n", $header, 2);
+        list($status, $stash) = explode("\r\n", $header, 2);
         list($v, $code, $message) = explode(" ", $status, 3);
-        $message                  = is_null($message) ? 'File Not Found' : "[{$status}]:{$message}";
-        $this->error              = $message;
+        $message = is_null($message) ? 'File Not Found' : "[{$status}]:{$message}";
+        $this->error = $message;
     }
 
 }

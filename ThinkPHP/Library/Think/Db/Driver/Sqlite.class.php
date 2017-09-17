@@ -20,18 +20,6 @@ class Sqlite extends Driver
 {
 
     /**
-     * 解析pdo连接的dsn信息
-     * @access public
-     * @param array $config 连接信息
-     * @return string
-     */
-    protected function parseDsn($config)
-    {
-        $dsn = 'sqlite:' . $config['database'];
-        return $dsn;
-    }
-
-    /**
      * 取得数据表的字段信息
      * @access public
      * @return array
@@ -39,14 +27,14 @@ class Sqlite extends Driver
     public function getFields($tableName)
     {
         list($tableName) = explode(' ', $tableName);
-        $result          = $this->query('PRAGMA table_info( ' . $tableName . ' )');
-        $info            = array();
+        $result = $this->query('PRAGMA table_info( ' . $tableName . ' )');
+        $info = array();
         if ($result) {
             foreach ($result as $key => $val) {
                 $info[$val['name']] = array(
-                    'name'    => $val['name'],
-                    'type'    => $val['type'],
-                    'notnull' => (bool) (1 === $val['notnull']),
+                    'name' => $val['name'],
+                    'type' => $val['type'],
+                    'notnull' => (bool)(1 === $val['notnull']),
                     'default' => $val['dflt_value'],
                     'primary' => '1' == $val['pk'],
                     'autoinc' => false,
@@ -76,7 +64,7 @@ class Sqlite extends Driver
     /**
      * SQL指令安全过滤
      * @access public
-     * @param string $str  SQL指令
+     * @param string $str SQL指令
      * @return string
      */
     public function escapeString($str)
@@ -101,6 +89,18 @@ class Sqlite extends Driver
             }
         }
         return $limitStr;
+    }
+
+    /**
+     * 解析pdo连接的dsn信息
+     * @access public
+     * @param array $config 连接信息
+     * @return string
+     */
+    protected function parseDsn($config)
+    {
+        $dsn = 'sqlite:' . $config['database'];
+        return $dsn;
     }
 
     /**

@@ -40,20 +40,20 @@ class Sae
 
     /**
      * 检测上传根目录
-     * @param string $rootpath   根目录
+     * @param string $rootpath 根目录
      * @return boolean true-检测通过，false-检测失败
      */
     public function checkRootPath($rootpath)
     {
         $rootpath = trim($rootpath, './');
         if (!$this->domain) {
-            $rootpath     = explode('/', $rootpath);
+            $rootpath = explode('/', $rootpath);
             $this->domain = strtolower(array_shift($rootpath));
-            $rootpath     = implode('/', $rootpath);
+            $rootpath = implode('/', $rootpath);
         }
 
         $this->rootPath = $rootpath;
-        $st             = new \SaeStorage();
+        $st = new \SaeStorage();
         if (false === $st->getDomainCapacity($this->domain)) {
             $this->error = '您好像没有建立Storage的domain[' . $this->domain . ']';
             return false;
@@ -73,14 +73,14 @@ class Sae
 
     /**
      * 保存指定文件
-     * @param  array   $file    保存的文件信息
+     * @param  array $file 保存的文件信息
      * @param  boolean $replace 同名文件是否覆盖
      * @return boolean          保存状态，true-成功，false-失败
      */
     public function save(&$file, $replace = true)
     {
         $filename = ltrim($this->rootPath . '/' . $file['savepath'] . $file['savename'], '/');
-        $st       = new \SaeStorage();
+        $st = new \SaeStorage();
         /* 不覆盖同名文件 */
         if (!$replace && $st->fileExists($this->domain, $filename)) {
             $this->error = '存在同名文件' . $file['savename'];

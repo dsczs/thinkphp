@@ -45,6 +45,76 @@ abstract class Controller
 
     }
 
+    public function __get($name)
+    {
+        return $this->get($name);
+    }
+
+    public function __set($name, $value)
+    {
+        $this->assign($name, $value);
+    }
+
+    /**
+     * 模板变量赋值
+     * @access protected
+     * @param mixed $name 要显示的模板变量
+     * @param mixed $value 变量的值
+     * @return Action
+     */
+    protected function assign($name, $value = '')
+    {
+        $this->view->assign($name, $value);
+        return $this;
+    }
+
+    /**
+     * 取得模板显示变量的值
+     * @access protected
+     * @param string $name 模板显示变量
+     * @return mixed
+     */
+    public function get($name = '')
+    {
+        return $this->view->get($name);
+    }
+
+    /**
+     * 检测模板变量的值
+     * @access public
+     * @param string $name 名称
+     * @return boolean
+     */
+    public function __isset($name)
+    {
+        return $this->get($name);
+    }
+
+    /**
+     * 魔术方法 有不存在的操作的时候执行
+     * @access public
+     * @param string $method 方法名
+     * @param array $args 参数
+     * @return mixed
+     */
+    public function __call($method, $args)
+    {
+        if (0 === strcasecmp($method, ACTION_NAME . C('ACTION_SUFFIX'))) {
+            if (method_exists($this, '_empty')) {
+                // 如果定义了_empty操作 则调用
+                $this->_empty($method, $args);
+            } elseif (file_exists_case($this->view->parseTemplate())) {
+                // 检查是否存在默认模版 如果有直接输出模版
+                $this->display();
+            } else {
+                E(L('_ERROR_ACTION_') . ':' . ACTION_NAME);
+            }
+        } else {
+            E(__CLASS__ . ':' . $method . L('_METHOD_NOT_EXIST_'));
+            return;
+        }
+    }
+
     /**
      * 模板显示 调用内置的模板引擎显示方法，
      * @access protected
@@ -103,76 +173,6 @@ abstract class Controller
     }
 
     /**
-     * 模板变量赋值
-     * @access protected
-     * @param mixed $name 要显示的模板变量
-     * @param mixed $value 变量的值
-     * @return Action
-     */
-    protected function assign($name, $value = '')
-    {
-        $this->view->assign($name, $value);
-        return $this;
-    }
-
-    public function __set($name, $value)
-    {
-        $this->assign($name, $value);
-    }
-
-    /**
-     * 取得模板显示变量的值
-     * @access protected
-     * @param string $name 模板显示变量
-     * @return mixed
-     */
-    public function get($name = '')
-    {
-        return $this->view->get($name);
-    }
-
-    public function __get($name)
-    {
-        return $this->get($name);
-    }
-
-    /**
-     * 检测模板变量的值
-     * @access public
-     * @param string $name 名称
-     * @return boolean
-     */
-    public function __isset($name)
-    {
-        return $this->get($name);
-    }
-
-    /**
-     * 魔术方法 有不存在的操作的时候执行
-     * @access public
-     * @param string $method 方法名
-     * @param array $args 参数
-     * @return mixed
-     */
-    public function __call($method, $args)
-    {
-        if (0 === strcasecmp($method, ACTION_NAME . C('ACTION_SUFFIX'))) {
-            if (method_exists($this, '_empty')) {
-                // 如果定义了_empty操作 则调用
-                $this->_empty($method, $args);
-            } elseif (file_exists_case($this->view->parseTemplate())) {
-                // 检查是否存在默认模版 如果有直接输出模版
-                $this->display();
-            } else {
-                E(L('_ERROR_ACTION_') . ':' . ACTION_NAME);
-            }
-        } else {
-            E(__CLASS__ . ':' . $method . L('_METHOD_NOT_EXIST_'));
-            return;
-        }
-    }
-
-    /**
      * 操作错误跳转的快捷方法
      * @access protected
      * @param string $message 错误信息
@@ -183,68 +183,6 @@ abstract class Controller
     protected function error($message = '', $jumpUrl = '', $ajax = false)
     {
         $this->dispatchJump($message, 0, $jumpUrl, $ajax);
-    }
-
-    /**
-     * 操作成功跳转的快捷方法
-     * @access protected
-     * @param string $message 提示信息
-     * @param string $jumpUrl 页面跳转地址
-     * @param mixed $ajax 是否为Ajax方式 当数字时指定跳转时间
-     * @return void
-     */
-    protected function success($message = '', $jumpUrl = '', $ajax = false)
-    {
-        $this->dispatchJump($message, 1, $jumpUrl, $ajax);
-    }
-
-    /**
-     * Ajax方式返回数据到客户端
-     * @access protected
-     * @param mixed $data 要返回的数据
-     * @param String $type AJAX返回数据格式
-     * @param int $json_option 传递给json_encode的option参数
-     * @return void
-     */
-    protected function ajaxReturn($data, $type = '', $json_option = 0)
-    {
-        if (empty($type)) {
-            $type = C('DEFAULT_AJAX_RETURN');
-        }
-
-        switch (strtoupper($type)) {
-            case 'JSON':
-                // 返回JSON数据格式到客户端 包含状态信息
-                header('Content-Type:application/json; charset=utf-8');
-                $data = json_encode($data, $json_option);
-                break;
-            case 'JSONP':
-                // 返回JSON数据格式到客户端 包含状态信息
-                header('Content-Type:application/json; charset=utf-8');
-                $handler = isset($_GET[C('VAR_JSONP_HANDLER')]) ? $_GET[C('VAR_JSONP_HANDLER')] : C('DEFAULT_JSONP_HANDLER');
-                $data    = $handler . '(' . json_encode($data, $json_option) . ');';
-                break;
-            case 'EVAL':
-                // 返回可执行的js脚本
-                header('Content-Type:text/html; charset=utf-8');
-                break;
-        }
-        exit($data);
-    }
-
-    /**
-     * Action跳转(URL重定向） 支持指定模块和延时跳转
-     * @access protected
-     * @param string $url 跳转的URL表达式
-     * @param array $params 其它URL参数
-     * @param integer $delay 延时跳转的时间 单位为秒
-     * @param string $msg 跳转提示信息
-     * @return void
-     */
-    protected function redirect($url, $params = array(), $delay = 0, $msg = '')
-    {
-        $url = U($url, $params);
-        redirect($url, $delay, $msg);
     }
 
     /**
@@ -262,10 +200,10 @@ abstract class Controller
     {
         if (true === $ajax || IS_AJAX) {
 // AJAX提交
-            $data           = is_array($ajax) ? $ajax : array();
-            $data['info']   = $message;
+            $data = is_array($ajax) ? $ajax : array();
+            $data['info'] = $message;
             $data['status'] = $status;
-            $data['url']    = $jumpUrl;
+            $data['url'] = $jumpUrl;
             $this->ajaxReturn($data);
         }
         if (is_int($ajax)) {
@@ -316,6 +254,68 @@ abstract class Controller
             // 中止执行  避免出错后继续执行
             exit;
         }
+    }
+
+    /**
+     * Ajax方式返回数据到客户端
+     * @access protected
+     * @param mixed $data 要返回的数据
+     * @param String $type AJAX返回数据格式
+     * @param int $json_option 传递给json_encode的option参数
+     * @return void
+     */
+    protected function ajaxReturn($data, $type = '', $json_option = 0)
+    {
+        if (empty($type)) {
+            $type = C('DEFAULT_AJAX_RETURN');
+        }
+
+        switch (strtoupper($type)) {
+            case 'JSON':
+                // 返回JSON数据格式到客户端 包含状态信息
+                header('Content-Type:application/json; charset=utf-8');
+                $data = json_encode($data, $json_option);
+                break;
+            case 'JSONP':
+                // 返回JSON数据格式到客户端 包含状态信息
+                header('Content-Type:application/json; charset=utf-8');
+                $handler = isset($_GET[C('VAR_JSONP_HANDLER')]) ? $_GET[C('VAR_JSONP_HANDLER')] : C('DEFAULT_JSONP_HANDLER');
+                $data = $handler . '(' . json_encode($data, $json_option) . ');';
+                break;
+            case 'EVAL':
+                // 返回可执行的js脚本
+                header('Content-Type:text/html; charset=utf-8');
+                break;
+        }
+        exit($data);
+    }
+
+    /**
+     * 操作成功跳转的快捷方法
+     * @access protected
+     * @param string $message 提示信息
+     * @param string $jumpUrl 页面跳转地址
+     * @param mixed $ajax 是否为Ajax方式 当数字时指定跳转时间
+     * @return void
+     */
+    protected function success($message = '', $jumpUrl = '', $ajax = false)
+    {
+        $this->dispatchJump($message, 1, $jumpUrl, $ajax);
+    }
+
+    /**
+     * Action跳转(URL重定向） 支持指定模块和延时跳转
+     * @access protected
+     * @param string $url 跳转的URL表达式
+     * @param array $params 其它URL参数
+     * @param integer $delay 延时跳转的时间 单位为秒
+     * @param string $msg 跳转提示信息
+     * @return void
+     */
+    protected function redirect($url, $params = array(), $delay = 0, $msg = '')
+    {
+        $url = U($url, $params);
+        redirect($url, $delay, $msg);
     }
 
 }

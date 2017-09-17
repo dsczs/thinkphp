@@ -32,16 +32,16 @@ class Ftp
     private $link;
 
     private $config = array(
-        'host'     => '', //服务器
-        'port'     => 21, //端口
-        'timeout'  => 90, //超时时间
+        'host' => '', //服务器
+        'port' => 21, //端口
+        'timeout' => 90, //超时时间
         'username' => '', //用户名
         'password' => '', //密码
     );
 
     /**
      * 构造函数，用于设置上传根路径
-     * @param array  $config FTP配置
+     * @param array $config FTP配置
      */
     public function __construct($config)
     {
@@ -55,8 +55,28 @@ class Ftp
     }
 
     /**
+     * 登录到FTP服务器
+     * @return boolean true-登录成功，false-登录失败
+     */
+    private function login()
+    {
+        extract($this->config);
+        $this->link = ftp_connect($host, $port, $timeout);
+        if ($this->link) {
+            if (ftp_login($this->link, $username, $password)) {
+                return true;
+            } else {
+                $this->error = "无法登录到FTP服务器：username - {$username}";
+            }
+        } else {
+            $this->error = "无法连接到FTP服务器：{$host}";
+        }
+        return false;
+    }
+
+    /**
      * 检测上传根目录
-     * @param string $rootpath   根目录
+     * @param string $rootpath 根目录
      * @return boolean true-检测通过，false-检测失败
      */
     public function checkRootPath($rootpath)
@@ -88,30 +108,6 @@ class Ftp
     }
 
     /**
-     * 保存指定文件
-     * @param  array   $file    保存的文件信息
-     * @param  boolean $replace 同名文件是否覆盖
-     * @return boolean          保存状态，true-成功，false-失败
-     */
-    public function save($file, $replace = true)
-    {
-        $filename = $this->rootPath . $file['savepath'] . $file['savename'];
-
-        /* 不覆盖同名文件 */
-        // if (!$replace && is_file($filename)) {
-        //     $this->error = '存在同名文件' . $file['savename'];
-        //     return false;
-        // }
-
-        /* 移动文件 */
-        if (!ftp_put($this->link, $filename, $file['tmp_name'], FTP_BINARY)) {
-            $this->error = '文件上传保存错误！';
-            return false;
-        }
-        return true;
-    }
-
-    /**
      * 创建目录
      * @param  string $savepath 要创建的目录
      * @return boolean          创建状态，true-成功，false-失败
@@ -134,32 +130,36 @@ class Ftp
     }
 
     /**
+     * 保存指定文件
+     * @param  array $file 保存的文件信息
+     * @param  boolean $replace 同名文件是否覆盖
+     * @return boolean          保存状态，true-成功，false-失败
+     */
+    public function save($file, $replace = true)
+    {
+        $filename = $this->rootPath . $file['savepath'] . $file['savename'];
+
+        /* 不覆盖同名文件 */
+        // if (!$replace && is_file($filename)) {
+        //     $this->error = '存在同名文件' . $file['savename'];
+        //     return false;
+        // }
+
+        /* 移动文件 */
+        if (!ftp_put($this->link, $filename, $file['tmp_name'], FTP_BINARY)) {
+            $this->error = '文件上传保存错误！';
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * 获取最后一次上传错误信息
      * @return string 错误信息
      */
     public function getError()
     {
         return $this->error;
-    }
-
-    /**
-     * 登录到FTP服务器
-     * @return boolean true-登录成功，false-登录失败
-     */
-    private function login()
-    {
-        extract($this->config);
-        $this->link = ftp_connect($host, $port, $timeout);
-        if ($this->link) {
-            if (ftp_login($this->link, $username, $password)) {
-                return true;
-            } else {
-                $this->error = "无法登录到FTP服务器：username - {$username}";
-            }
-        } else {
-            $this->error = "无法连接到FTP服务器：{$host}";
-        }
-        return false;
     }
 
     /**

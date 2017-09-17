@@ -25,11 +25,11 @@ class Dispatcher
      */
     public static function dispatch()
     {
-        $varPath       = C('VAR_PATHINFO');
-        $varModule     = C('VAR_MODULE');
+        $varPath = C('VAR_PATHINFO');
+        $varModule = C('VAR_MODULE');
         $varController = C('VAR_CONTROLLER');
-        $varAction     = C('VAR_ACTION');
-        $urlCase       = C('URL_CASE_INSENSITIVE');
+        $varAction = C('VAR_ACTION');
+        $urlCase = C('URL_CASE_INSENSITIVE');
         if (isset($_GET[$varPath])) {
             // 判断URL里面是否有兼容模式参数
             $_SERVER['PATH_INFO'] = $_GET[$varPath];
@@ -66,11 +66,11 @@ class Dispatcher
                         $rule = $rules[$subDomain];
                     } elseif (isset($rules['*.' . $domain2]) && !empty($domain3)) {
                         // 泛三级域名
-                        $rule      = $rules['*.' . $domain2];
+                        $rule = $rules['*.' . $domain2];
                         $panDomain = $domain3;
                     } elseif (isset($rules['*']) && !empty($domain2) && 'www' != $domain2) {
                         // 泛二级域名
-                        $rule      = $rules['*'];
+                        $rule = $rules['*'];
                         $panDomain = $domain2;
                     }
                 }
@@ -111,7 +111,7 @@ class Dispatcher
             foreach ($types as $type) {
                 if (!empty($_SERVER[$type])) {
                     $_SERVER['PATH_INFO'] = (0 === strpos($_SERVER[$type], $_SERVER['SCRIPT_NAME'])) ?
-                    substr($_SERVER[$type], strlen($_SERVER['SCRIPT_NAME'])) : $_SERVER[$type];
+                        substr($_SERVER[$type], strlen($_SERVER['SCRIPT_NAME'])) : $_SERVER[$type];
                     break;
                 }
             }
@@ -129,11 +129,11 @@ class Dispatcher
 
         if (__INFO__ && C('MULTI_MODULE') && !defined('BIND_MODULE')) {
             // 获取模块名
-            $paths     = explode($depr, __INFO__, 2);
+            $paths = explode($depr, __INFO__, 2);
             $allowList = C('MODULE_ALLOW_LIST'); // 允许的模块列表
-            $module    = preg_replace('/\.' . __EXT__ . '$/i', '', $paths[0]);
+            $module = preg_replace('/\.' . __EXT__ . '$/i', '', $paths[0]);
             if (empty($allowList) || (is_array($allowList) && in_array_case($module, $allowList))) {
-                $_GET[$varModule]     = $module;
+                $_GET[$varModule] = $module;
                 $_SERVER['PATH_INFO'] = isset($paths[1]) ? $paths[1] : '';
             }
         }
@@ -178,7 +178,7 @@ class Dispatcher
             // 去除URL后缀
             $_SERVER['PATH_INFO'] = preg_replace(C('URL_HTML_SUFFIX') ? '/\.(' . trim(C('URL_HTML_SUFFIX'), '.') . ')$/i' : '/\.' . __EXT__ . '$/i', '', $_SERVER['PATH_INFO']);
 
-            $depr  = C('URL_PATHINFO_DEPR');
+            $depr = C('URL_PATHINFO_DEPR');
             $paths = explode($depr, trim($_SERVER['PATH_INFO'], $depr));
 
             if (!defined('BIND_CONTROLLER')) {
@@ -195,7 +195,9 @@ class Dispatcher
                 // URL参数按顺序绑定变量
                 $var = $paths;
             } else {
-                preg_replace_callback('/(\w+)\/([^\/]+)/', function ($match) use (&$var) {$var[$match[1]] = strip_tags($match[2]);}, implode('/', $paths));
+                preg_replace_callback('/(\w+)\/([^\/]+)/', function ($match) use (&$var) {
+                    $var[$match[1]] = strip_tags($match[2]);
+                }, implode('/', $paths));
             }
             $_GET = array_merge($var, $_GET);
         }
@@ -204,6 +206,27 @@ class Dispatcher
         define('ACTION_NAME', defined('BIND_ACTION') ? BIND_ACTION : self::getAction($varAction, $urlCase));
         //保证$_REQUEST正常取值
         $_REQUEST = array_merge($_POST, $_GET);
+    }
+
+    /**
+     * 获得实际的模块名称
+     */
+    private static function getModule($var)
+    {
+        $module = (!empty($_GET[$var]) ? $_GET[$var] : C('DEFAULT_MODULE'));
+        unset($_GET[$var]);
+        if ($maps = C('URL_MODULE_MAP')) {
+            if (isset($maps[strtolower($module)])) {
+                // 记录当前别名
+                define('MODULE_ALIAS', strtolower($module));
+                // 获取实际的模块名
+                return ucfirst($maps[MODULE_ALIAS]);
+            } elseif (array_search(strtolower($module), $maps)) {
+                // 禁止访问原始模块
+                return '';
+            }
+        }
+        return strip_tags(ucfirst(strtolower($module)));
     }
 
     /**
@@ -227,31 +250,10 @@ class Dispatcher
     private static function getAction($var, $urlCase)
     {
         $action = !empty($_POST[$var]) ?
-        $_POST[$var] :
-        (!empty($_GET[$var]) ? $_GET[$var] : C('DEFAULT_ACTION'));
+            $_POST[$var] :
+            (!empty($_GET[$var]) ? $_GET[$var] : C('DEFAULT_ACTION'));
         unset($_POST[$var], $_GET[$var]);
         return strip_tags($urlCase ? strtolower($action) : $action);
-    }
-
-    /**
-     * 获得实际的模块名称
-     */
-    private static function getModule($var)
-    {
-        $module = (!empty($_GET[$var]) ? $_GET[$var] : C('DEFAULT_MODULE'));
-        unset($_GET[$var]);
-        if ($maps = C('URL_MODULE_MAP')) {
-            if (isset($maps[strtolower($module)])) {
-                // 记录当前别名
-                define('MODULE_ALIAS', strtolower($module));
-                // 获取实际的模块名
-                return ucfirst($maps[MODULE_ALIAS]);
-            } elseif (array_search(strtolower($module), $maps)) {
-                // 禁止访问原始模块
-                return '';
-            }
-        }
-        return strip_tags(ucfirst(strtolower($module)));
     }
 
 }

@@ -25,18 +25,18 @@ class BorisBehavior
             }
 
             Think::addMap(array(
-                'Boris\Boris'             => VENDOR_PATH . 'Boris/Boris.php',
-                'Boris\Config'            => VENDOR_PATH . 'Boris/Config.php',
+                'Boris\Boris' => VENDOR_PATH . 'Boris/Boris.php',
+                'Boris\Config' => VENDOR_PATH . 'Boris/Config.php',
                 'Boris\CLIOptionsHandler' => VENDOR_PATH . 'Boris/CLIOptionsHandler.php',
-                'Boris\ColoredInspector'  => VENDOR_PATH . 'Boris/ColoredInspector.php',
-                'Boris\DumpInspector'     => VENDOR_PATH . 'Boris/DumpInspector.php',
-                'Boris\EvalWorker'        => VENDOR_PATH . 'Boris/EvalWorker.php',
-                'Boris\ExportInspector'   => VENDOR_PATH . 'Boris/ExportInspector.php',
-                'Boris\Inspector'         => VENDOR_PATH . 'Boris/Inspector.php',
-                'Boris\ReadlineClient'    => VENDOR_PATH . 'Boris/ReadlineClient.php',
-                'Boris\ShallowParser'     => VENDOR_PATH . 'Boris/ShallowParser.php',
+                'Boris\ColoredInspector' => VENDOR_PATH . 'Boris/ColoredInspector.php',
+                'Boris\DumpInspector' => VENDOR_PATH . 'Boris/DumpInspector.php',
+                'Boris\EvalWorker' => VENDOR_PATH . 'Boris/EvalWorker.php',
+                'Boris\ExportInspector' => VENDOR_PATH . 'Boris/ExportInspector.php',
+                'Boris\Inspector' => VENDOR_PATH . 'Boris/Inspector.php',
+                'Boris\ReadlineClient' => VENDOR_PATH . 'Boris/ReadlineClient.php',
+                'Boris\ShallowParser' => VENDOR_PATH . 'Boris/ShallowParser.php',
             ));
-            $boris  = new \Boris\Boris(">>> ");
+            $boris = new \Boris\Boris(">>> ");
             $config = new \Boris\Config();
             $config->apply($boris, true);
             $options = new \Boris\CLIOptionsHandler();

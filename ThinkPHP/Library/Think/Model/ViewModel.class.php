@@ -21,14 +21,6 @@ class ViewModel extends Model
     protected $viewFields = array();
 
     /**
-     * 自动检测数据表信息
-     * @access protected
-     * @return void
-     */
-    protected function _checkTableInfo()
-    {}
-
-    /**
      * 得到完整的数据表名
      * @access public
      * @return string
@@ -42,8 +34,10 @@ class ViewModel extends Model
                 if (isset($view['_table'])) {
                     // 2011/10/17 添加实际表名定义支持 可以实现同一个表的视图
                     $tableName .= $view['_table'];
-                    $prefix    = $this->tablePrefix;
-                    $tableName = preg_replace_callback("/__([A-Z_-]+)__/sU", function ($match) use ($prefix) {return $prefix . strtolower($match[1]);}, $tableName);
+                    $prefix = $this->tablePrefix;
+                    $tableName = preg_replace_callback("/__([A-Z_-]+)__/sU", function ($match) use ($prefix) {
+                        return $prefix . strtolower($match[1]);
+                    }, $tableName);
                 } else {
                     $class = parse_res_name($key, C('DEFAULT_M_LAYER'));
                     $Model = class_exists($class) ? new $class() : M($key);
@@ -58,10 +52,19 @@ class ViewModel extends Model
                 $tableName .= ' ' . strtoupper($type) . ' JOIN ';
                 $len = strlen($type . '_JOIN ');
             }
-            $tableName           = substr($tableName, 0, -$len);
+            $tableName = substr($tableName, 0, -$len);
             $this->trueTableName = $tableName;
         }
         return $this->trueTableName;
+    }
+
+    /**
+     * 自动检测数据表信息
+     * @access protected
+     * @return void
+     */
+    protected function _checkTableInfo()
+    {
     }
 
     /**
@@ -93,6 +96,74 @@ class ViewModel extends Model
     }
 
     /**
+     * 检查fields表达式中的视图字段
+     * @access protected
+     * @param string $fields 字段
+     * @return string
+     */
+    protected function checkFields($fields = '')
+    {
+        if (empty($fields) || '*' == $fields) {
+            // 获取全部视图字段
+            $fields = array();
+            foreach ($this->viewFields as $name => $val) {
+                $k = isset($val['_as']) ? $val['_as'] : $name;
+                $val = $this->_checkFields($name, $val);
+                foreach ($val as $key => $field) {
+                    if (is_numeric($key)) {
+                        $fields[] = $k . '.' . $field . ' AS ' . $field;
+                    } elseif ('_' != substr($key, 0, 1)) {
+                        // 以_开头的为特殊定义
+                        if (false !== strpos($key, '*') || false !== strpos($key, '(') || false !== strpos($key, '.')) {
+                            //如果包含* 或者 使用了sql方法 则不再添加前面的表名
+                            $fields[] = $key . ' AS ' . $field;
+                        } else {
+                            $fields[] = $k . '.' . $key . ' AS ' . $field;
+                        }
+                    }
+                }
+            }
+            $fields = implode(',', $fields);
+        } else {
+            if (!is_array($fields)) {
+                $fields = explode(',', $fields);
+            }
+
+            // 解析成视图字段
+            $array = array();
+            foreach ($fields as $key => $field) {
+                if (strpos($field, '(') || strpos(strtolower($field), ' as ')) {
+                    // 使用了函数或者别名
+                    $array[] = $field;
+                    unset($fields[$key]);
+                }
+            }
+            foreach ($this->viewFields as $name => $val) {
+                $k = isset($val['_as']) ? $val['_as'] : $name;
+                $val = $this->_checkFields($name, $val);
+                foreach ($fields as $key => $field) {
+                    if (false !== $_field = array_search($field, $val, true)) {
+                        // 存在视图字段
+                        if (is_numeric($_field)) {
+                            $array[] = $k . '.' . $field . ' AS ' . $field;
+                        } elseif ('_' != substr($_field, 0, 1)) {
+                            if (false !== strpos($_field, '*') || false !== strpos($_field, '(') || false !== strpos($_field, '.')) //如果包含* 或者 使用了sql方法 则不再添加前面的表名
+                            {
+                                $array[] = $_field . ' AS ' . $field;
+                            } else {
+                                $array[] = $k . '.' . $_field . ' AS ' . $field;
+                            }
+
+                        }
+                    }
+                }
+            }
+            $fields = implode(',', $array);
+        }
+        return $fields;
+    }
+
+    /**
      * 检查是否定义了所有字段
      * @access protected
      * @param string $name 模型名称
@@ -110,6 +181,35 @@ class ViewModel extends Model
     }
 
     /**
+     * 检查Group表达式中的视图字段
+     * @access protected
+     * @param string $group 字段
+     * @return string
+     */
+    protected function checkGroup($group = '')
+    {
+        if (!empty($group)) {
+            $groups = explode(',', $group);
+            $_group = array();
+            foreach ($groups as $field) {
+                // 解析成视图字段
+                foreach ($this->viewFields as $name => $val) {
+                    $k = isset($val['_as']) ? $val['_as'] : $name;
+                    $val = $this->_checkFields($name, $val);
+                    if (false !== $_field = array_search($field, $val, true)) {
+                        // 存在视图字段
+                        $field = is_numeric($_field) ? $k . '.' . $field : $k . '.' . $_field;
+                        break;
+                    }
+                }
+                $_group[] = $field;
+            }
+            $group = implode(',', $_group);
+        }
+        return $group;
+    }
+
+    /**
      * 检查条件中的视图字段
      * @param $where 条件表达式
      * @return array
@@ -120,13 +220,13 @@ class ViewModel extends Model
             $fields = $field_map_table = array();
             foreach ($this->viewFields as $key => $val) {
                 $table_alias = isset($val['_as']) ? $val['_as'] : $key;
-                $val         = $this->_checkFields($key, $val);
+                $val = $this->_checkFields($key, $val);
                 foreach ($val as $as_name => $v) {
                     if (is_numeric($as_name)) {
-                        $fields[]          = $v; //所有表字段集合
+                        $fields[] = $v; //所有表字段集合
                         $field_map_table[] = $table_alias; //所有表字段对应表名集合
                     } else {
-                        $fields[$as_name]          = $v;
+                        $fields[$as_name] = $v;
                         $field_map_table[$as_name] = $table_alias;
                     }
                 }
@@ -206,10 +306,10 @@ class ViewModel extends Model
             foreach ($orders as $order) {
                 $array = explode(' ', trim($order));
                 $field = $array[0];
-                $sort  = isset($array[1]) ? $array[1] : 'ASC';
+                $sort = isset($array[1]) ? $array[1] : 'ASC';
                 // 解析成视图字段
                 foreach ($this->viewFields as $name => $val) {
-                    $k   = isset($val['_as']) ? $val['_as'] : $name;
+                    $k = isset($val['_as']) ? $val['_as'] : $name;
                     $val = $this->_checkFields($name, $val);
                     if (false !== $_field = array_search($field, $val, true)) {
                         // 存在视图字段
@@ -222,103 +322,5 @@ class ViewModel extends Model
             $order = implode(',', $_order);
         }
         return $order;
-    }
-
-    /**
-     * 检查Group表达式中的视图字段
-     * @access protected
-     * @param string $group 字段
-     * @return string
-     */
-    protected function checkGroup($group = '')
-    {
-        if (!empty($group)) {
-            $groups = explode(',', $group);
-            $_group = array();
-            foreach ($groups as $field) {
-                // 解析成视图字段
-                foreach ($this->viewFields as $name => $val) {
-                    $k   = isset($val['_as']) ? $val['_as'] : $name;
-                    $val = $this->_checkFields($name, $val);
-                    if (false !== $_field = array_search($field, $val, true)) {
-                        // 存在视图字段
-                        $field = is_numeric($_field) ? $k . '.' . $field : $k . '.' . $_field;
-                        break;
-                    }
-                }
-                $_group[] = $field;
-            }
-            $group = implode(',', $_group);
-        }
-        return $group;
-    }
-
-    /**
-     * 检查fields表达式中的视图字段
-     * @access protected
-     * @param string $fields 字段
-     * @return string
-     */
-    protected function checkFields($fields = '')
-    {
-        if (empty($fields) || '*' == $fields) {
-            // 获取全部视图字段
-            $fields = array();
-            foreach ($this->viewFields as $name => $val) {
-                $k   = isset($val['_as']) ? $val['_as'] : $name;
-                $val = $this->_checkFields($name, $val);
-                foreach ($val as $key => $field) {
-                    if (is_numeric($key)) {
-                        $fields[] = $k . '.' . $field . ' AS ' . $field;
-                    } elseif ('_' != substr($key, 0, 1)) {
-                        // 以_开头的为特殊定义
-                        if (false !== strpos($key, '*') || false !== strpos($key, '(') || false !== strpos($key, '.')) {
-                            //如果包含* 或者 使用了sql方法 则不再添加前面的表名
-                            $fields[] = $key . ' AS ' . $field;
-                        } else {
-                            $fields[] = $k . '.' . $key . ' AS ' . $field;
-                        }
-                    }
-                }
-            }
-            $fields = implode(',', $fields);
-        } else {
-            if (!is_array($fields)) {
-                $fields = explode(',', $fields);
-            }
-
-            // 解析成视图字段
-            $array = array();
-            foreach ($fields as $key => $field) {
-                if (strpos($field, '(') || strpos(strtolower($field), ' as ')) {
-                    // 使用了函数或者别名
-                    $array[] = $field;
-                    unset($fields[$key]);
-                }
-            }
-            foreach ($this->viewFields as $name => $val) {
-                $k   = isset($val['_as']) ? $val['_as'] : $name;
-                $val = $this->_checkFields($name, $val);
-                foreach ($fields as $key => $field) {
-                    if (false !== $_field = array_search($field, $val, true)) {
-                        // 存在视图字段
-                        if (is_numeric($_field)) {
-                            $array[] = $k . '.' . $field . ' AS ' . $field;
-                        } elseif ('_' != substr($_field, 0, 1)) {
-                            if (false !== strpos($_field, '*') || false !== strpos($_field, '(') || false !== strpos($_field, '.'))
-                            //如果包含* 或者 使用了sql方法 则不再添加前面的表名
-                            {
-                                $array[] = $_field . ' AS ' . $field;
-                            } else {
-                                $array[] = $k . '.' . $_field . ' AS ' . $field;
-                            }
-
-                        }
-                    }
-                }
-            }
-            $fields = implode(',', $array);
-        }
-        return $fields;
     }
 }

@@ -59,22 +59,22 @@ class Http
             return $return;
         }
 
-        $matches                                       = parse_url($url);
-        !isset($matches['host']) && $matches['host']   = '';
-        !isset($matches['path']) && $matches['path']   = '';
+        $matches = parse_url($url);
+        !isset($matches['host']) && $matches['host'] = '';
+        !isset($matches['path']) && $matches['path'] = '';
         !isset($matches['query']) && $matches['query'] = '';
-        !isset($matches['port']) && $matches['port']   = '';
-        $host                                          = $matches['host'];
-        $path                                          = $matches['path'] ? $matches['path'] . ($matches['query'] ? '?' . $matches['query'] : '') : '/';
-        $port                                          = !empty($matches['port']) ? $matches['port'] : 80;
+        !isset($matches['port']) && $matches['port'] = '';
+        $host = $matches['host'];
+        $path = $matches['path'] ? $matches['path'] . ($matches['query'] ? '?' . $matches['query'] : '') : '/';
+        $port = !empty($matches['port']) ? $matches['port'] : 80;
 
         $conf_arr = array(
-            'limit'   => 0,
-            'post'    => '',
-            'cookie'  => '',
-            'ip'      => '',
+            'limit' => 0,
+            'post' => '',
+            'cookie' => '',
+            'ip' => '',
             'timeout' => 15,
-            'block'   => true,
+            'block' => true,
         );
 
         foreach (array_merge($conf_arr, $conf) as $k => $v) {
@@ -145,8 +145,8 @@ class Http
      * @access public
      * @param string $filename 下载文件名
      * @param string $showname 下载显示的文件名
-     * @param string $content  下载的内容
-     * @param integer $expire  下载内容浏览器缓存时间
+     * @param string $content 下载的内容
+     * @param integer $expire 下载内容浏览器缓存时间
      * @return void
      */
     public static function download($filename, $showname = '', $content = '', $expire = 180)
@@ -155,7 +155,7 @@ class Http
             $length = filesize($filename);
         } elseif (is_file(UPLOAD_PATH . $filename)) {
             $filename = UPLOAD_PATH . $filename;
-            $length   = filesize($filename);
+            $length = filesize($filename);
         } elseif ('' != $content) {
             $length = strlen($content);
         } else {
@@ -167,7 +167,7 @@ class Http
         $showname = self::get_basename($showname);;
         if (!empty($filename)) {
             $finfo = new \finfo(FILEINFO_MIME);
-            $type  = $finfo->file($filename);
+            $type = $finfo->file($filename);
         } else {
             $type = "application/octet-stream";
         }
@@ -185,7 +185,7 @@ class Http
         if ('' == $content) {
             readfile($filename);
         } else {
-            echo ($content);
+            echo($content);
         }
         exit();
     }
@@ -194,7 +194,8 @@ class Http
      * 获取文件的名称，兼容中文名
      * @return string
      */
-    static public function get_basename($filename){
+    static public function get_basename($filename)
+    {
         return preg_replace('/^.+[\\\\\\/]/', '', $filename);
     }
 
@@ -208,15 +209,15 @@ class Http
         $headers = getallheaders();
         if (!empty($header)) {
             $info = $headers[$header];
-            echo ($header . ':' . $info . "\n");
+            echo($header . ':' . $info . "\n");
         } else {
             foreach ($headers as $key => $val) {
-                echo ("$key:$val\n");
+                echo("$key:$val\n");
             }
         }
         $output = ob_get_clean();
         if ($echo) {
-            echo (nl2br($output));
+            echo(nl2br($output));
         } else {
             return $output;
         }

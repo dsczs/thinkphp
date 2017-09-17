@@ -20,21 +20,6 @@ class Pgsql extends Driver
 {
 
     /**
-     * 解析pdo连接的dsn信息
-     * @access public
-     * @param array $config 连接信息
-     * @return string
-     */
-    protected function parseDsn($config)
-    {
-        $dsn = 'pgsql:dbname=' . $config['database'] . ';host=' . $config['hostname'];
-        if (!empty($config['hostport'])) {
-            $dsn .= ';port=' . $config['hostport'];
-        }
-        return $dsn;
-    }
-
-    /**
      * 取得数据表的字段信息
      * @access public
      * @return array
@@ -42,14 +27,14 @@ class Pgsql extends Driver
     public function getFields($tableName)
     {
         list($tableName) = explode(' ', $tableName);
-        $result          = $this->query('select fields_name as "field",fields_type as "type",fields_not_null as "null",fields_key_name as "key",fields_default as "default",fields_default as "extra" from table_msg(\'' . $tableName . '\');');
-        $info            = array();
+        $result = $this->query('select fields_name as "field",fields_type as "type",fields_not_null as "null",fields_key_name as "key",fields_default as "default",fields_default as "extra" from table_msg(\'' . $tableName . '\');');
+        $info = array();
         if ($result) {
             foreach ($result as $key => $val) {
                 $info[$val['field']] = array(
-                    'name'    => $val['field'],
-                    'type'    => $val['type'],
-                    'notnull' => (bool) ('' === $val['null']), // not null is empty, null is yes
+                    'name' => $val['field'],
+                    'type' => $val['type'],
+                    'notnull' => (bool)('' === $val['null']), // not null is empty, null is yes
                     'default' => $val['default'],
                     'primary' => (strtolower($val['key']) == 'pri'),
                     'autoinc' => (strtolower($val['extra']) == 'auto_increment'),
@@ -67,7 +52,7 @@ class Pgsql extends Driver
     public function getTables($dbName = '')
     {
         $result = $this->query("select tablename as Tables_in_test from pg_tables where  schemaname ='public'");
-        $info   = array();
+        $info = array();
         foreach ($result as $key => $val) {
             $info[$key] = current($val);
         }
@@ -92,6 +77,21 @@ class Pgsql extends Driver
             }
         }
         return $limitStr;
+    }
+
+    /**
+     * 解析pdo连接的dsn信息
+     * @access public
+     * @param array $config 连接信息
+     * @return string
+     */
+    protected function parseDsn($config)
+    {
+        $dsn = 'pgsql:dbname=' . $config['database'] . ';host=' . $config['hostname'];
+        if (!empty($config['hostport'])) {
+            $dsn .= ';port=' . $config['hostport'];
+        }
+        return $dsn;
     }
 
     /**

@@ -89,8 +89,7 @@ class Think
             }
 
             // 加载应用行为定义
-            if (is_file(CONF_PATH . 'tags.php'))
-            // 允许应用增加开发模式配置定义
+            if (is_file(CONF_PATH . 'tags.php')) // 允许应用增加开发模式配置定义
             {
                 Hook::import(include CONF_PATH . 'tags.php');
             }
@@ -176,7 +175,7 @@ class Think
             } else {
                 // 检测自定义命名空间 否则就以模块为命名空间
                 $namespace = C('AUTOLOAD_NAMESPACE');
-                $path      = isset($namespace[$name]) ? dirname($namespace[$name]) . '/' : APP_PATH;
+                $path = isset($namespace[$name]) ? dirname($namespace[$name]) . '/' : APP_PATH;
             }
             $filename = $path . str_replace('\\', '/', $class) . EXT;
             if (is_file($filename)) {
@@ -197,8 +196,7 @@ class Think
             }
             // 根据自动加载路径设置进行尝试搜索
             foreach (explode(',', C('APP_AUTOLOAD_PATH')) as $path) {
-                if (import($path . '.' . $class))
-                // 如果加载类成功则返回
+                if (import($path . '.' . $class)) // 如果加载类成功则返回
                 {
                     return;
                 }
@@ -234,15 +232,55 @@ class Think
     }
 
     /**
+     * 错误输出
+     * @param mixed $error 错误
+     * @return void
+     */
+    public static function halt($error)
+    {
+        $e = array();
+        if (APP_DEBUG || IS_CLI) {
+            //调试模式下输出错误信息
+            if (!is_array($error)) {
+                $trace = debug_backtrace();
+                $e['message'] = $error;
+                $e['file'] = $trace[0]['file'];
+                $e['line'] = $trace[0]['line'];
+                ob_start();
+                debug_print_backtrace();
+                $e['trace'] = ob_get_clean();
+            } else {
+                $e = $error;
+            }
+            if (IS_CLI) {
+                exit((IS_WIN ? iconv('UTF-8', 'gbk', $e['message']) : $e['message']) . PHP_EOL . 'FILE: ' . $e['file'] . '(' . $e['line'] . ')' . PHP_EOL . $e['trace']);
+            }
+        } else {
+            //否则定向到错误页面
+            $error_page = C('ERROR_PAGE');
+            if (!empty($error_page)) {
+                redirect($error_page);
+            } else {
+                $message = is_array($error) ? $error['message'] : $error;
+                $e['message'] = C('SHOW_ERROR_MSG') ? $message : C('ERROR_MESSAGE');
+            }
+        }
+        // 包含异常页面模板
+        $exceptionFile = C('TMPL_EXCEPTION_FILE', null, THINK_PATH . 'Tpl/think_exception.tpl');
+        include $exceptionFile;
+        exit;
+    }
+
+    /**
      * 自定义异常处理
      * @access public
      * @param mixed $e 异常对象
      */
     public static function appException($e)
     {
-        $error            = array();
+        $error = array();
         $error['message'] = $e->getMessage();
-        $trace            = $e->getTrace();
+        $trace = $e->getTrace();
         if ('E' == $trace[0]['function']) {
             $error['file'] = $trace[0]['file'];
             $error['line'] = $trace[0]['line'];
@@ -257,6 +295,8 @@ class Think
         header('Status:404 Not Found');
         self::halt($error);
     }
+
+    // 致命错误捕获
 
     /**
      * 自定义错误处理
@@ -290,64 +330,6 @@ class Think
         }
     }
 
-    // 致命错误捕获
-    public static function fatalError()
-    {
-        Log::save();
-        if ($e = error_get_last()) {
-            switch ($e['type']) {
-                case E_ERROR:
-                case E_PARSE:
-                case E_CORE_ERROR:
-                case E_COMPILE_ERROR:
-                case E_USER_ERROR:
-                    ob_end_clean();
-                    self::halt($e);
-                    break;
-            }
-        }
-    }
-
-    /**
-     * 错误输出
-     * @param mixed $error 错误
-     * @return void
-     */
-    public static function halt($error)
-    {
-        $e = array();
-        if (APP_DEBUG || IS_CLI) {
-            //调试模式下输出错误信息
-            if (!is_array($error)) {
-                $trace        = debug_backtrace();
-                $e['message'] = $error;
-                $e['file']    = $trace[0]['file'];
-                $e['line']    = $trace[0]['line'];
-                ob_start();
-                debug_print_backtrace();
-                $e['trace'] = ob_get_clean();
-            } else {
-                $e = $error;
-            }
-            if (IS_CLI) {
-                exit((IS_WIN ? iconv('UTF-8', 'gbk', $e['message']) : $e['message']) . PHP_EOL . 'FILE: ' . $e['file'] . '(' . $e['line'] . ')' . PHP_EOL . $e['trace']);
-            }
-        } else {
-            //否则定向到错误页面
-            $error_page = C('ERROR_PAGE');
-            if (!empty($error_page)) {
-                redirect($error_page);
-            } else {
-                $message      = is_array($error) ? $error['message'] : $error;
-                $e['message'] = C('SHOW_ERROR_MSG') ? $message : C('ERROR_MESSAGE');
-            }
-        }
-        // 包含异常页面模板
-        $exceptionFile = C('TMPL_EXCEPTION_FILE', null, THINK_PATH . 'Tpl/think_exception.tpl');
-        include $exceptionFile;
-        exit;
-    }
-
     /**
      * 添加和获取页面Trace记录
      * @param string $value 变量
@@ -363,7 +345,7 @@ class Think
             // 获取trace信息
             return $_trace;
         } else {
-            $info  = ($label ? $label . ':' : '') . print_r($value, true);
+            $info = ($label ? $label . ':' : '') . print_r($value, true);
             $level = strtoupper($level);
 
             if ((defined('IS_AJAX') && IS_AJAX) || !C('SHOW_PAGE_TRACE') || $record) {
@@ -373,6 +355,23 @@ class Think
                     $_trace[$level] = array();
                 }
                 $_trace[$level][] = $info;
+            }
+        }
+    }
+
+    public static function fatalError()
+    {
+        Log::save();
+        if ($e = error_get_last()) {
+            switch ($e['type']) {
+                case E_ERROR:
+                case E_PARSE:
+                case E_CORE_ERROR:
+                case E_COMPILE_ERROR:
+                case E_USER_ERROR:
+                    ob_end_clean();
+                    self::halt($e);
+                    break;
             }
         }
     }

@@ -15,7 +15,8 @@
  * @package Smarty
  * @subpackage Compiler
  */
-class Smarty_Internal_Compile_Block extends Smarty_Internal_CompileBase {
+class Smarty_Internal_Compile_Block extends Smarty_Internal_CompileBase
+{
 
     /**
      * Attribute definition: Overwrites base class.
@@ -40,38 +41,12 @@ class Smarty_Internal_Compile_Block extends Smarty_Internal_CompileBase {
     public $optional_attributes = array('hide');
 
     /**
-     * Compiles code for the {block} tag
-     *
-     * @param array  $args     array with attributes from parser
-     * @param object $compiler compiler object
-     * @return boolean true
-     */
-    public function compile($args, $compiler)
-    {
-        // check and get attributes
-        $_attr = $this->getAttributes($compiler, $args);
-        $save = array($_attr, $compiler->parser->current_buffer, $compiler->nocache, $compiler->smarty->merge_compiled_includes);
-        $this->openTag($compiler, 'block', $save);
-        if ($_attr['nocache'] == true) {
-            $compiler->nocache = true;
-        }
-        // set flag for {block} tag
-        $compiler->inheritance = true;
-        // must merge includes
-        $compiler->smarty->merge_compiled_includes = true;
-
-        $compiler->parser->current_buffer = new _smarty_template_buffer($compiler->parser);
-        $compiler->has_code = false;
-        return true;
-    }
-
-    /**
      * Save or replace child block source by block name during parsing
      *
-     * @param string $block_content     block source content
-     * @param string $block_tag         opening block tag
-     * @param object $template          template object
-     * @param string $filepath          filepath of template source
+     * @param string $block_content block source content
+     * @param string $block_tag opening block tag
+     * @param object $template template object
+     * @param string $filepath filepath of template source
      */
     public static function saveBlockData($block_content, $block_tag, $template, $filepath)
     {
@@ -87,17 +62,17 @@ class Smarty_Internal_Compile_Block extends Smarty_Internal_CompileBase {
                 if (strpos($block_content, $template->smarty->left_delimiter . '$smarty.block.child' . $template->smarty->right_delimiter) !== false) {
                     if (isset($template->block_data[$_name])) {
                         $block_content = str_replace($template->smarty->left_delimiter . '$smarty.block.child' . $template->smarty->right_delimiter,
-                        $template->block_data[$_name]['source'], $block_content);
+                            $template->block_data[$_name]['source'], $block_content);
                         unset($template->block_data[$_name]);
                     } else {
                         $block_content = str_replace($template->smarty->left_delimiter . '$smarty.block.child' . $template->smarty->right_delimiter,
-                        '', $block_content);
+                            '', $block_content);
                     }
                 }
                 if (isset($template->block_data[$_name])) {
                     if (strpos($template->block_data[$_name]['source'], '%%%%SMARTY_PARENT%%%%') !== false) {
                         $template->block_data[$_name]['source'] =
-                        str_replace('%%%%SMARTY_PARENT%%%%', $block_content, $template->block_data[$_name]['source']);
+                            str_replace('%%%%SMARTY_PARENT%%%%', $block_content, $template->block_data[$_name]['source']);
                     } elseif ($template->block_data[$_name]['mode'] == 'prepend') {
                         $template->block_data[$_name]['source'] .= $block_content;
                     } elseif ($template->block_data[$_name]['mode'] == 'append') {
@@ -121,8 +96,8 @@ class Smarty_Internal_Compile_Block extends Smarty_Internal_CompileBase {
     /**
      * Compile saved child block source
      *
-     * @param object $compiler  compiler object
-     * @param string $_name     optional name of child block
+     * @param object $compiler compiler object
+     * @param string $_name optional name of child block
      * @return string   compiled code of schild block
      */
     public static function compileChildBlock($compiler, $_name = null)
@@ -133,7 +108,7 @@ class Smarty_Internal_Compile_Block extends Smarty_Internal_CompileBase {
             $stack_count = count($compiler->_tag_stack);
             while (--$stack_count >= 0) {
                 if ($compiler->_tag_stack[$stack_count][0] == 'block') {
-                    $_name = trim($compiler->_tag_stack[$stack_count][1][0]['name'] ,"'\"");
+                    $_name = trim($compiler->_tag_stack[$stack_count][1][0]['name'], "'\"");
                     break;
                 }
             }
@@ -148,7 +123,7 @@ class Smarty_Internal_Compile_Block extends Smarty_Internal_CompileBase {
             return '';
         }
         $_tpl = new Smarty_Internal_template ('string:' . $compiler->template->block_data[$_name]['source'], $compiler->smarty, $compiler->template, $compiler->template->cache_id,
-        $compiler->template->compile_id = null, $compiler->template->caching, $compiler->template->cache_lifetime);
+            $compiler->template->compile_id = null, $compiler->template->caching, $compiler->template->cache_lifetime);
         $_tpl->variable_filters = $compiler->template->variable_filters;
         $_tpl->properties['nocache_hash'] = $compiler->template->properties['nocache_hash'];
         $_tpl->source->filepath = $compiler->template->block_data[$_name]['file'];
@@ -177,15 +152,41 @@ class Smarty_Internal_Compile_Block extends Smarty_Internal_CompileBase {
         if ($_tpl->has_nocache_code) {
             $compiler->template->has_nocache_code = true;
         }
-        foreach($_tpl->required_plugins as $code => $tmp1) {
-            foreach($tmp1 as $name => $tmp) {
-                foreach($tmp as $type => $data) {
+        foreach ($_tpl->required_plugins as $code => $tmp1) {
+            foreach ($tmp1 as $name => $tmp) {
+                foreach ($tmp as $type => $data) {
                     $compiler->template->required_plugins[$code][$name][$type] = $data;
                 }
             }
         }
         unset($_tpl);
         return $_output;
+    }
+
+    /**
+     * Compiles code for the {block} tag
+     *
+     * @param array $args array with attributes from parser
+     * @param object $compiler compiler object
+     * @return boolean true
+     */
+    public function compile($args, $compiler)
+    {
+        // check and get attributes
+        $_attr = $this->getAttributes($compiler, $args);
+        $save = array($_attr, $compiler->parser->current_buffer, $compiler->nocache, $compiler->smarty->merge_compiled_includes);
+        $this->openTag($compiler, 'block', $save);
+        if ($_attr['nocache'] == true) {
+            $compiler->nocache = true;
+        }
+        // set flag for {block} tag
+        $compiler->inheritance = true;
+        // must merge includes
+        $compiler->smarty->merge_compiled_includes = true;
+
+        $compiler->parser->current_buffer = new _smarty_template_buffer($compiler->parser);
+        $compiler->has_code = false;
+        return true;
     }
 
 }
@@ -195,13 +196,14 @@ class Smarty_Internal_Compile_Block extends Smarty_Internal_CompileBase {
  *
  * @package Smarty
  * @subpackage Compiler
-*/
-class Smarty_Internal_Compile_Blockclose extends Smarty_Internal_CompileBase {
+ */
+class Smarty_Internal_Compile_Blockclose extends Smarty_Internal_CompileBase
+{
 
     /**
      * Compiles code for the {/block} tag
      *
-     * @param array  $args     array with attributes from parser
+     * @param array $args array with attributes from parser
      * @param object $compiler compiler object
      * @return string compiled code
      */

@@ -22,13 +22,14 @@ class ParseTemplateBehavior
     // 行为扩展的执行入口必须是run
     public function run(&$_data)
     {
-        $engine          = strtolower(C('TMPL_ENGINE_TYPE'));
-        $_content        = empty($_data['content']) ? $_data['file'] : $_data['content'];
+        $engine = strtolower(C('TMPL_ENGINE_TYPE'));
+        $_content = empty($_data['content']) ? $_data['file'] : $_data['content'];
         $_data['prefix'] = !empty($_data['prefix']) ? $_data['prefix'] : C('TMPL_CACHE_PREFIX');
         if ('think' == $engine) {
             // 采用Think模板引擎
             if ((!empty($_data['content']) && $this->checkContentCache($_data['content'], $_data['prefix']))
-                || $this->checkCache($_data['file'], $_data['prefix'])) {
+                || $this->checkCache($_data['file'], $_data['prefix'])
+            ) {
                 // 缓存有效
                 //载入模版缓存文件
                 Storage::load(C('CACHE_PATH') . $_data['prefix'] . md5($_content) . C('TMPL_CACHFILE_SUFFIX'), $_data['var']);
@@ -55,10 +56,26 @@ class ParseTemplateBehavior
     }
 
     /**
+     * 检查缓存内容是否有效
+     * 如果无效则需要重新编译
+     * @access public
+     * @param string $tmplContent 模板内容
+     * @return boolean
+     */
+    protected function checkContentCache($tmplContent, $prefix = '')
+    {
+        if (Storage::has(C('CACHE_PATH') . $prefix . md5($tmplContent) . C('TMPL_CACHFILE_SUFFIX'))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
      * 检查缓存文件是否有效
      * 如果无效则需要重新编译
      * @access public
-     * @param string $tmplTemplateFile  模板文件名
+     * @param string $tmplTemplateFile 模板文件名
      * @return boolean
      */
     protected function checkCache($tmplTemplateFile, $prefix = '')
@@ -87,21 +104,5 @@ class ParseTemplateBehavior
         }
         // 缓存有效
         return true;
-    }
-
-    /**
-     * 检查缓存内容是否有效
-     * 如果无效则需要重新编译
-     * @access public
-     * @param string $tmplContent  模板内容
-     * @return boolean
-     */
-    protected function checkContentCache($tmplContent, $prefix = '')
-    {
-        if (Storage::has(C('CACHE_PATH') . $prefix . md5($tmplContent) . C('TMPL_CACHFILE_SUFFIX'))) {
-            return true;
-        } else {
-            return false;
-        }
     }
 }

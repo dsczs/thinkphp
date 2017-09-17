@@ -17,10 +17,10 @@ class HproseController
 {
 
     protected $allowMethodList = '';
-    protected $crossDomain     = false;
-    protected $P3P             = false;
-    protected $get             = true;
-    protected $debug           = false;
+    protected $crossDomain = false;
+    protected $P3P = false;
+    protected $get = true;
+    protected $debug = false;
 
     /**
      * 架构函数
@@ -63,5 +63,6 @@ class HproseController
      * @return mixed
      */
     public function __call($method, $args)
-    {}
+    {
+    }
 }

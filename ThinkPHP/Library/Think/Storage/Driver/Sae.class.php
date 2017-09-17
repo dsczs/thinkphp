@@ -21,9 +21,10 @@ class Sae extends Storage
      * @access public
      */
     private $mc;
-    private $kvs      = array();
-    private $htmls    = array();
+    private $kvs = array();
+    private $htmls = array();
     private $contents = array();
+
     public function __construct()
     {
         if (!function_exists('memcache_init')) {
@@ -34,6 +35,41 @@ class Sae extends Storage
         if (!$this->mc) {
             header('Content-Type:text/html;charset=utf-8');
             exit('您未开通Memcache服务，请在SAE管理平台初始化Memcache服务');
+        }
+    }
+
+    /**
+     * 文件追加写入
+     * @access public
+     * @param string $filename 文件名
+     * @param string $content 追加的文件内容
+     * @return boolean
+     */
+    public function append($filename, $content, $type = '')
+    {
+        if ($old_content = $this->read($filename, $type)) {
+            $content = $old_content . $content;
+        }
+        return $this->put($filename, $content, $type);
+    }
+
+    /**
+     * 文件内容读取
+     * @access public
+     * @param string $filename 文件名
+     * @return string
+     */
+    public function read($filename, $type = '')
+    {
+        switch (strtolower($type)) {
+            case 'f':
+                $kv = $this->getKv();
+                if (!isset($this->kvs[$filename])) {
+                    $this->kvs[$filename] = $kv->get($filename);
+                }
+                return $this->kvs[$filename];
+            default:
+                return $this->get($filename, 'content', $type);
         }
     }
 
@@ -54,42 +90,55 @@ class Sae extends Storage
     }
 
     /**
-     * 文件内容读取
+     * 读取文件信息
      * @access public
-     * @param string $filename  文件名
-     * @return string
+     * @param string $filename 文件名
+     * @param string $name 信息名 mtime或者content
+     * @return boolean
      */
-    public function read($filename, $type = '')
+    public function get($filename, $name, $type = '')
     {
         switch (strtolower($type)) {
-            case 'f':
-                $kv = $this->getKv();
-                if (!isset($this->kvs[$filename])) {
-                    $this->kvs[$filename] = $kv->get($filename);
+            case 'html':
+                if (!isset($this->htmls[$filename])) {
+                    $kv = $this->getKv();
+                    $this->htmls[$filename] = $kv->get($filename);
                 }
-                return $this->kvs[$filename];
+                $content = $this->htmls[$filename];
+                break;
             default:
-                return $this->get($filename, 'content', $type);
+                if (!isset($this->contents[$filename])) {
+                    $this->contents[$filename] = $this->mc->get($filename);
+                }
+                $content = $this->contents[$filename];
         }
+        if (false === $content) {
+            return false;
+        }
+        $info = array(
+            'mtime' => substr($content, 0, 10),
+            'content' => substr($content, 10),
+        );
+        return $info[$name];
     }
 
     /**
      * 文件写入
      * @access public
-     * @param string $filename  文件名
-     * @param string $content  文件内容
+     * @param string $filename 文件名
+     * @param string $content 文件内容
      * @return boolean
      */
     public function put($filename, $content, $type = '')
     {
         switch (strtolower($type)) {
             case 'f':
-                $kv                   = $this->getKv();
+                $kv = $this->getKv();
                 $this->kvs[$filename] = $content;
                 return $kv->set($filename, $content);
             case 'html':
-                $kv                     = $this->getKv();
-                $content                = time() . $content;
+                $kv = $this->getKv();
+                $content = time() . $content;
                 $this->htmls[$filename] = $content;
                 return $kv->set($filename, $content);
             default:
@@ -104,25 +153,10 @@ class Sae extends Storage
     }
 
     /**
-     * 文件追加写入
-     * @access public
-     * @param string $filename  文件名
-     * @param string $content  追加的文件内容
-     * @return boolean
-     */
-    public function append($filename, $content, $type = '')
-    {
-        if ($old_content = $this->read($filename, $type)) {
-            $content = $old_content . $content;
-        }
-        return $this->put($filename, $content, $type);
-    }
-
-    /**
      * 加载文件
      * @access public
-     * @param string $_filename  文件名
-     * @param array $vars  传入变量
+     * @param string $_filename 文件名
+     * @param array $vars 传入变量
      * @return void
      */
     public function load($_filename, $vars = null)
@@ -137,7 +171,7 @@ class Sae extends Storage
     /**
      * 文件是否存在
      * @access public
-     * @param string $filename  文件名
+     * @param string $filename 文件名
      * @return boolean
      */
     public function has($filename, $type = '')
@@ -152,7 +186,7 @@ class Sae extends Storage
     /**
      * 文件删除
      * @access public
-     * @param string $filename  文件名
+     * @param string $filename 文件名
      * @return boolean
      */
     public function unlink($filename, $type = '')
@@ -170,39 +204,6 @@ class Sae extends Storage
                 unset($this->contents[$filename]);
                 return $this->mc->delete($filename);
         }
-    }
-
-    /**
-     * 读取文件信息
-     * @access public
-     * @param string $filename  文件名
-     * @param string $name  信息名 mtime或者content
-     * @return boolean
-     */
-    public function get($filename, $name, $type = '')
-    {
-        switch (strtolower($type)) {
-            case 'html':
-                if (!isset($this->htmls[$filename])) {
-                    $kv                     = $this->getKv();
-                    $this->htmls[$filename] = $kv->get($filename);
-                }
-                $content = $this->htmls[$filename];
-                break;
-            default:
-                if (!isset($this->contents[$filename])) {
-                    $this->contents[$filename] = $this->mc->get($filename);
-                }
-                $content = $this->contents[$filename];
-        }
-        if (false === $content) {
-            return false;
-        }
-        $info = array(
-            'mtime'   => substr($content, 0, 10),
-            'content' => substr($content, 10),
-        );
-        return $info[$name];
     }
 
 }

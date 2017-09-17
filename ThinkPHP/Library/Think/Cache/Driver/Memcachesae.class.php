@@ -30,29 +30,19 @@ class Memcachesae extends Cache
     public function __construct($options = array())
     {
         $options = array_merge(array(
-            'host'       => C('MEMCACHE_HOST') ?: '127.0.0.1',
-            'port'       => C('MEMCACHE_PORT') ?: 11211,
-            'timeout'    => C('DATA_CACHE_TIMEOUT') ?: false,
+            'host' => C('MEMCACHE_HOST') ?: '127.0.0.1',
+            'port' => C('MEMCACHE_PORT') ?: 11211,
+            'timeout' => C('DATA_CACHE_TIMEOUT') ?: false,
             'persistent' => false,
         ), $options);
 
-        $this->options           = $options;
+        $this->options = $options;
         $this->options['expire'] = isset($options['expire']) ? $options['expire'] : C('DATA_CACHE_TIME');
         $this->options['prefix'] = isset($options['prefix']) ? $options['prefix'] : C('DATA_CACHE_PREFIX');
         $this->options['length'] = isset($options['length']) ? $options['length'] : 0;
-        $this->handler           = memcache_init(); //[sae] 下实例化
+        $this->handler = memcache_init(); //[sae] 下实例化
         //[sae] 下不用链接
         $this->connected = true;
-    }
-
-    /**
-     * 是否连接
-     * @access private
-     * @return boolean
-     */
-    private function isConnected()
-    {
-        return $this->connected;
     }
 
     /**
@@ -71,8 +61,8 @@ class Memcachesae extends Cache
      * 写入缓存
      * @access public
      * @param string $name 缓存变量名
-     * @param mixed $value  存储数据
-     * @param integer $expire  有效时间（秒）
+     * @param mixed $value 存储数据
+     * @param integer $expire 有效时间（秒）
      * @return boolean
      */
     public function set($name, $value, $expire = null)
@@ -92,41 +82,11 @@ class Memcachesae extends Cache
         return false;
     }
 
-    /**
-     * 删除缓存
-     * @access public
-     * @param string $name 缓存变量名
-     * @return boolean
-     */
-    public function rm($name, $ttl = false)
-    {
-        $name = $_SERVER['HTTP_APPVERSION'] . '/' . $this->options['prefix'] . $name;
-        return false === $ttl ?
-        $this->handler->delete($name) :
-        $this->handler->delete($name, $ttl);
-    }
 
-    /**
-     * 清除缓存
-     * @access public
-     * @return boolean
-     */
-    public function clear()
-    {
-        return $this->handler->flush();
-    }
-
-    /**
-     * 队列缓存
-     * @access protected
-     * @param string $key 队列名
-     * @return mixed
-     */
-    //[sae] 下重写queque队列缓存方法
     protected function queue($key)
     {
         $queue_name = isset($this->options['queue_name']) ? $this->options['queue_name'] : 'think_queue';
-        $value      = F($queue_name);
+        $value = F($queue_name);
         if (!$value) {
             $value = array();
         }
@@ -152,6 +112,47 @@ class Memcachesae extends Cache
             }
         }
         return F($queue_name, $value);
+    }
+
+    /**
+     * 删除缓存
+     * @access public
+     * @param string $name 缓存变量名
+     * @return boolean
+     */
+    public function rm($name, $ttl = false)
+    {
+        $name = $_SERVER['HTTP_APPVERSION'] . '/' . $this->options['prefix'] . $name;
+        return false === $ttl ?
+            $this->handler->delete($name) :
+            $this->handler->delete($name, $ttl);
+    }
+
+    /**
+     * 清除缓存
+     * @access public
+     * @return boolean
+     */
+    public function clear()
+    {
+        return $this->handler->flush();
+    }
+
+    /**
+     * 队列缓存
+     * @access protected
+     * @param string $key 队列名
+     * @return mixed
+     */
+    //[sae] 下重写queque队列缓存方法
+    /**
+     * 是否连接
+     * @access private
+     * @return boolean
+     */
+    private function isConnected()
+    {
+        return $this->connected;
     }
 
 }

@@ -15,16 +15,31 @@
  * @package Smarty
  * @subpackage TemplateResources
  */
-abstract class Smarty_Resource_Custom extends Smarty_Resource {
+abstract class Smarty_Resource_Custom extends Smarty_Resource
+{
 
     /**
-     * fetch template and its modification time from data source
+     * populate Source Object with meta data from Resource
      *
-     * @param string  $name    template name
-     * @param string  &$source template source
-     * @param integer &$mtime  template modification timestamp (epoch)
+     * @param Smarty_Template_Source $source source object
+     * @param Smarty_Internal_Template $_template template object
      */
-    protected abstract function fetch($name, &$source, &$mtime);
+    public function populate(Smarty_Template_Source $source, Smarty_Internal_Template $_template = null)
+    {
+        $source->filepath = strtolower($source->type . ':' . $source->name);
+        $source->uid = sha1($source->type . ':' . $source->name);
+
+        $mtime = $this->fetchTimestamp($source->name);
+        if ($mtime !== null) {
+            $source->timestamp = $mtime;
+        } else {
+            $this->fetch($source->name, $content, $timestamp);
+            $source->timestamp = isset($timestamp) ? $timestamp : false;
+            if (isset($content))
+                $source->content = $content;
+        }
+        $source->exists = !!$source->timestamp;
+    }
 
     /**
      * Fetch template's modification timestamp from data source
@@ -41,27 +56,13 @@ abstract class Smarty_Resource_Custom extends Smarty_Resource {
     }
 
     /**
-     * populate Source Object with meta data from Resource
+     * fetch template and its modification time from data source
      *
-     * @param Smarty_Template_Source   $source    source object
-     * @param Smarty_Internal_Template $_template template object
+     * @param string $name template name
+     * @param string &$source template source
+     * @param integer &$mtime template modification timestamp (epoch)
      */
-    public function populate(Smarty_Template_Source $source, Smarty_Internal_Template $_template=null)
-    {
-        $source->filepath = strtolower($source->type . ':' . $source->name);
-        $source->uid = sha1($source->type . ':' . $source->name);
-
-        $mtime = $this->fetchTimestamp($source->name);
-        if ($mtime !== null) {
-            $source->timestamp = $mtime;
-        } else {
-            $this->fetch($source->name, $content, $timestamp);
-            $source->timestamp = isset($timestamp) ? $timestamp : false;
-            if( isset($content) )
-                $source->content = $content;
-        }
-        $source->exists = !!$source->timestamp;
-    }
+    protected abstract function fetch($name, &$source, &$mtime);
 
     /**
      * Load template's source into current template object

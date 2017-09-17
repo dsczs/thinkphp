@@ -20,17 +20,17 @@ return array(
     ),
 
     // 别名定义
-    'alias'  => array(
-        'Think\Exception'         => CORE_PATH . 'Exception' . EXT,
-        'Think\Model'             => CORE_PATH . 'Model' . EXT,
-        'Think\Db'                => CORE_PATH . 'Db' . EXT,
-        'Think\Cache'             => CORE_PATH . 'Cache' . EXT,
+    'alias' => array(
+        'Think\Exception' => CORE_PATH . 'Exception' . EXT,
+        'Think\Model' => CORE_PATH . 'Model' . EXT,
+        'Think\Db' => CORE_PATH . 'Db' . EXT,
+        'Think\Cache' => CORE_PATH . 'Cache' . EXT,
         'Think\Cache\Driver\File' => CORE_PATH . 'Cache/Driver/File' . EXT,
-        'Think\Storage'           => CORE_PATH . 'Storage' . EXT,
+        'Think\Storage' => CORE_PATH . 'Storage' . EXT,
     ),
 
     // 函数和类文件
-    'core'   => array(
+    'core' => array(
         MODE_PATH . 'Lite/functions.php',
         COMMON_PATH . 'Common/function.php',
         CORE_PATH . 'Hook' . EXT,
@@ -42,6 +42,5 @@ return array(
         CORE_PATH . 'View' . EXT,
     ),
     // 行为扩展定义
-    'tags'   => array(
-    ),
+    'tags' => array(),
 );

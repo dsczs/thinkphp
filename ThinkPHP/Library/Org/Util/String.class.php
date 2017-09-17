@@ -14,25 +14,6 @@ class String
 {
 
     /**
-     * 生成UUID 单机使用
-     * @access public
-     * @return string
-     */
-    public static function uuid()
-    {
-        $charid = md5(uniqid(mt_rand(), true));
-        $hyphen = chr(45); // "-"
-        $uuid   = chr(123) // "{"
-         . substr($charid, 0, 8) . $hyphen
-        . substr($charid, 8, 4) . $hyphen
-        . substr($charid, 12, 4) . $hyphen
-        . substr($charid, 16, 4) . $hyphen
-        . substr($charid, 20, 12)
-        . chr(125); // "}"
-        return $uuid;
-    }
-
-    /**
      * 生成Guid主键
      * @return Boolean
      */
@@ -42,16 +23,35 @@ class String
     }
 
     /**
+     * 生成UUID 单机使用
+     * @access public
+     * @return string
+     */
+    public static function uuid()
+    {
+        $charid = md5(uniqid(mt_rand(), true));
+        $hyphen = chr(45); // "-"
+        $uuid = chr(123) // "{"
+            . substr($charid, 0, 8) . $hyphen
+            . substr($charid, 8, 4) . $hyphen
+            . substr($charid, 12, 4) . $hyphen
+            . substr($charid, 16, 4) . $hyphen
+            . substr($charid, 20, 12)
+            . chr(125); // "}"
+        return $uuid;
+    }
+
+    /**
      * 检查字符串是否是UTF8编码
      * @param string $string 字符串
      * @return Boolean
      */
     public static function isUtf8($str)
     {
-        $c    = 0;
-        $b    = 0;
+        $c = 0;
+        $b = 0;
         $bits = 0;
-        $len  = strlen($str);
+        $len = strlen($str);
         for ($i = 0; $i < $len; $i++) {
             $c = ord($str[$i]);
             if ($c > 128) {
@@ -90,31 +90,33 @@ class String
     }
 
     /**
-     * 字符串截取，支持中文和其他编码
-     * @static
-     * @access public
-     * @param string $str 需要转换的字符串
-     * @param string $start 开始位置
-     * @param string $length 截取长度
-     * @param string $charset 编码格式
-     * @param string $suffix 截断显示字符
+     * 生成一定数量的随机数，并且不重复
+     * @param integer $number 数量
+     * @param string $len 长度
+     * @param string $type 字串类型
+     * 0 字母 1 数字 其它 混合
      * @return string
      */
-    public static function msubstr($str, $start = 0, $length, $charset = "utf-8", $suffix = true)
+    public static function buildCountRand($number, $length = 4, $mode = 1)
     {
-        if (function_exists("mb_substr")) {
-            $slice = mb_substr($str, $start, $length, $charset);
-        } elseif (function_exists('iconv_substr')) {
-            $slice = iconv_substr($str, $start, $length, $charset);
-        } else {
-            $re['utf-8']  = "/[\x01-\x7f]|[\xc2-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf]{2}|[\xf0-\xff][\x80-\xbf]{3}/";
-            $re['gb2312'] = "/[\x01-\x7f]|[\xb0-\xf7][\xa0-\xfe]/";
-            $re['gbk']    = "/[\x01-\x7f]|[\x81-\xfe][\x40-\xfe]/";
-            $re['big5']   = "/[\x01-\x7f]|[\x81-\xfe]([\x40-\x7e]|\xa1-\xfe])/";
-            preg_match_all($re[$charset], $str, $match);
-            $slice = join("", array_slice($match[0], $start, $length));
+        if (1 == $mode && $length < strlen($number)) {
+            //不足以生成一定数量的不重复数字
+            return false;
         }
-        return $suffix ? $slice . '...' : $slice;
+        $rand = array();
+        for ($i = 0; $i < $number; $i++) {
+            $rand[] = self::randString($length, $mode);
+        }
+        $unqiue = array_unique($rand);
+        if (count($unqiue) == count($rand)) {
+            return $rand;
+        }
+        $count = count($rand) - count($unqiue);
+        for ($i = 0; $i < $count * 3; $i++) {
+            $rand[] = self::randString($length, $mode);
+        }
+        $rand = array_slice(array_unique($rand), 0, $number);
+        return $rand;
     }
 
     /**
@@ -156,7 +158,7 @@ class String
         }
         if (4 != $type) {
             $chars = str_shuffle($chars);
-            $str   = substr($chars, 0, $len);
+            $str = substr($chars, 0, $len);
         } else {
             // 中文随机字
             for ($i = 0; $i < $len; $i++) {
@@ -167,33 +169,31 @@ class String
     }
 
     /**
-     * 生成一定数量的随机数，并且不重复
-     * @param integer $number 数量
-     * @param string $len 长度
-     * @param string $type 字串类型
-     * 0 字母 1 数字 其它 混合
+     * 字符串截取，支持中文和其他编码
+     * @static
+     * @access public
+     * @param string $str 需要转换的字符串
+     * @param string $start 开始位置
+     * @param string $length 截取长度
+     * @param string $charset 编码格式
+     * @param string $suffix 截断显示字符
      * @return string
      */
-    public static function buildCountRand($number, $length = 4, $mode = 1)
+    public static function msubstr($str, $start = 0, $length, $charset = "utf-8", $suffix = true)
     {
-        if (1 == $mode && $length < strlen($number)) {
-            //不足以生成一定数量的不重复数字
-            return false;
+        if (function_exists("mb_substr")) {
+            $slice = mb_substr($str, $start, $length, $charset);
+        } elseif (function_exists('iconv_substr')) {
+            $slice = iconv_substr($str, $start, $length, $charset);
+        } else {
+            $re['utf-8'] = "/[\x01-\x7f]|[\xc2-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf]{2}|[\xf0-\xff][\x80-\xbf]{3}/";
+            $re['gb2312'] = "/[\x01-\x7f]|[\xb0-\xf7][\xa0-\xfe]/";
+            $re['gbk'] = "/[\x01-\x7f]|[\x81-\xfe][\x40-\xfe]/";
+            $re['big5'] = "/[\x01-\x7f]|[\x81-\xfe]([\x40-\x7e]|\xa1-\xfe])/";
+            preg_match_all($re[$charset], $str, $match);
+            $slice = join("", array_slice($match[0], $start, $length));
         }
-        $rand = array();
-        for ($i = 0; $i < $number; $i++) {
-            $rand[] = self::randString($length, $mode);
-        }
-        $unqiue = array_unique($rand);
-        if (count($unqiue) == count($rand)) {
-            return $rand;
-        }
-        $count = count($rand) - count($unqiue);
-        for ($i = 0; $i < $count * 3; $i++) {
-            $rand[] = self::randString($length, $mode);
-        }
-        $rand = array_slice(array_unique($rand), 0, $number);
-        return $rand;
+        return $suffix ? $slice . '...' : $slice;
     }
 
     /**
@@ -206,7 +206,7 @@ class String
      */
     public static function buildFormatRand($format, $number = 1)
     {
-        $str    = array();
+        $str = array();
         $length = strlen($format);
         for ($j = 0; $j < $number; $j++) {
             $strtemp = '';
@@ -247,7 +247,7 @@ class String
     public static function autoCharset($string, $from = 'gbk', $to = 'utf-8')
     {
         $from = strtoupper($from) == 'UTF8' ? 'utf-8' : $from;
-        $to   = strtoupper($to) == 'UTF8' ? 'utf-8' : $to;
+        $to = strtoupper($to) == 'UTF8' ? 'utf-8' : $to;
         if (strtoupper($from) === strtoupper($to) || empty($string) || (is_scalar($string) && !is_string($string))) {
             //如果编码相同或者非字符串标量则不转换
             return $string;
@@ -262,7 +262,7 @@ class String
             }
         } elseif (is_array($string)) {
             foreach ($string as $key => $val) {
-                $_key          = self::autoCharset($key, $from, $to);
+                $_key = self::autoCharset($key, $from, $to);
                 $string[$_key] = self::autoCharset($val, $from, $to);
                 if ($key != $_key) {
                     unset($string[$key]);

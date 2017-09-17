@@ -30,14 +30,14 @@ class Qiniu
     private $config = array(
         'secretKey' => '', //七牛服务器
         'accessKey' => '', //七牛用户
-        'domain'    => '', //七牛密码
-        'bucket'    => '', //空间名称
-        'timeout'   => 300, //超时时间
+        'domain' => '', //七牛密码
+        'bucket' => '', //空间名称
+        'timeout' => 300, //超时时间
     );
 
     /**
      * 构造函数，用于设置上传根路径
-     * @param array  $config FTP配置
+     * @param array $config FTP配置
      */
     public function __construct($config)
     {
@@ -48,7 +48,7 @@ class Qiniu
 
     /**
      * 检测上传根目录(七牛上传时支持自动创建目录，直接返回)
-     * @param string $rootpath   根目录
+     * @param string $rootpath 根目录
      * @return boolean true-检测通过，false-检测失败
      */
     public function checkRootPath($rootpath)
@@ -79,22 +79,22 @@ class Qiniu
 
     /**
      * 保存指定文件
-     * @param  array   $file    保存的文件信息
+     * @param  array $file 保存的文件信息
      * @param  boolean $replace 同名文件是否覆盖
      * @return boolean          保存状态，true-成功，false-失败
      */
     public function save(&$file, $replace = true)
     {
         $file['name'] = $file['savepath'] . $file['savename'];
-        $key          = str_replace('/', '_', $file['name']);
-        $upfile       = array(
-            'name'     => 'file',
+        $key = str_replace('/', '_', $file['name']);
+        $upfile = array(
+            'name' => 'file',
             'fileName' => $key,
             'fileBody' => file_get_contents($file['tmp_name']),
         );
-        $config      = array();
-        $result      = $this->qiniu->upload($config, $upfile);
-        $url         = $this->qiniu->downlink($key);
+        $config = array();
+        $result = $this->qiniu->upload($config, $upfile);
+        $url = $this->qiniu->downlink($key);
         $file['url'] = $url;
         return false === $result ? false : true;
     }

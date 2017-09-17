@@ -39,7 +39,7 @@ function C($name = null, $value = null, $default = null)
             return;
         }
         // 二维数组设置和获取支持
-        $name    = explode('.', $name);
+        $name = explode('.', $name);
         $name[0] = strtolower($name[0]);
         if (is_null($value)) {
             return isset($_config[$name[0]][$name[1]]) ? $_config[$name[0]][$name[1]] : $default;
@@ -73,7 +73,7 @@ function load_config($file, $parse = CONF_PARSE)
         case 'yaml':
             return yaml_parse_file($file);
         case 'xml':
-            return (array) simplexml_load_file($file);
+            return (array)simplexml_load_file($file);
         case 'json':
             return json_decode(file_get_contents($file), true);
         default:
@@ -116,7 +116,7 @@ function E($msg, $code = 0)
 function G($start, $end = '', $dec = 4)
 {
     static $_info = array();
-    static $_mem  = array();
+    static $_mem = array();
     if (is_float($end)) {
         // 记录时间
         $_info[$start] = $end;
@@ -243,11 +243,14 @@ function I($name, $default = '', $filter = null, $datas = null)
         $method = 'param';
     }
     switch (strtolower($method)) {
-        case 'get':$input = &$_GET;
+        case 'get':
+            $input = &$_GET;
             break;
-        case 'post':$input = &$_POST;
+        case 'post':
+            $input = &$_POST;
             break;
-        case 'put':parse_str(file_get_contents('php://input'), $input);
+        case 'put':
+            parse_str(file_get_contents('php://input'), $input);
             break;
         case 'param':
             switch ($_SERVER['REQUEST_METHOD']) {
@@ -264,28 +267,34 @@ function I($name, $default = '', $filter = null, $datas = null)
         case 'path':
             $input = array();
             if (!empty($_SERVER['PATH_INFO'])) {
-                $depr  = C('URL_PATHINFO_DEPR');
+                $depr = C('URL_PATHINFO_DEPR');
                 $input = explode($depr, trim($_SERVER['PATH_INFO'], $depr));
             }
             break;
-        case 'request':$input = &$_REQUEST;
+        case 'request':
+            $input = &$_REQUEST;
             break;
-        case 'session':$input = &$_SESSION;
+        case 'session':
+            $input = &$_SESSION;
             break;
-        case 'cookie':$input = &$_COOKIE;
+        case 'cookie':
+            $input = &$_COOKIE;
             break;
-        case 'server':$input = &$_SERVER;
+        case 'server':
+            $input = &$_SERVER;
             break;
-        case 'globals':$input = &$GLOBALS;
+        case 'globals':
+            $input = &$GLOBALS;
             break;
-        case 'data':$input = &$datas;
+        case 'data':
+            $input = &$datas;
             break;
         default:
             return null;
     }
     if ('' == $name) {
         // 获取全部变量
-        $data    = $input;
+        $data = $input;
         $filters = isset($filter) ? $filter : C('DEFAULT_FILTER');
         if ($filters) {
             if (is_string($filters)) {
@@ -297,7 +306,7 @@ function I($name, $default = '', $filter = null, $datas = null)
         }
     } elseif (isset($input[$name])) {
         // 取值操作
-        $data    = $input[$name];
+        $data = $input[$name];
         $filters = isset($filter) ? $filter : C('DEFAULT_FILTER');
         if ($filters) {
             if (is_string($filters)) {
@@ -311,7 +320,7 @@ function I($name, $default = '', $filter = null, $datas = null)
                     $data = is_array($data) ? arrayMapRecursive($filter, $data) : $filter($data); // 参数过滤
                 } elseif (0 === strpos($filter, '/')) {
                     // 支持正则验证
-                    if (1 !== preg_match($filter, (string) $data)) {
+                    if (1 !== preg_match($filter, (string)$data)) {
                         return isset($default) ? $default : null;
                     }
                 } else {
@@ -325,19 +334,19 @@ function I($name, $default = '', $filter = null, $datas = null)
         if (!empty($type)) {
             switch (strtolower($type)) {
                 case 's': // 字符串
-                    $data = (string) $data;
+                    $data = (string)$data;
                     break;
                 case 'a': // 数组
-                    $data = (array) $data;
+                    $data = (array)$data;
                     break;
                 case 'd': // 数字
-                    $data = (int) $data;
+                    $data = (int)$data;
                     break;
                 case 'f': // 浮点
-                    $data = (float) $data;
+                    $data = (float)$data;
                     break;
                 case 'b': // 布尔
-                    $data = (boolean) $data;
+                    $data = (boolean)$data;
                     break;
             }
         }
@@ -354,8 +363,8 @@ function array_map_recursive($filter, $data)
     $result = array();
     foreach ($data as $key => $val) {
         $result[$key] = is_array($val)
-        ? array_map_recursive($filter, $val)
-        : call_user_func($filter, $val);
+            ? array_map_recursive($filter, $val)
+            : call_user_func($filter, $val);
     }
     return $result;
 }
@@ -382,7 +391,7 @@ function N($key, $step = 0, $save = false)
     if (empty($step)) {
         return $_num[$key];
     } else {
-        $_num[$key] = $_num[$key] + (int) $step;
+        $_num[$key] = $_num[$key] + (int)$step;
     }
 
     if (false !== $save) {
@@ -401,7 +410,9 @@ function N($key, $step = 0, $save = false)
 function parse_name($name, $type = 0)
 {
     if ($type) {
-        return ucfirst(preg_replace_callback('/_([a-zA-Z])/', function ($match) {return strtoupper($match[1]);}, $name));
+        return ucfirst(preg_replace_callback('/_([a-zA-Z])/', function ($match) {
+            return strtoupper($match[1]);
+        }, $name));
     } else {
         return strtolower(trim(preg_replace("/[A-Z]/", "_\\0", $name), "_"));
     }
@@ -455,7 +466,7 @@ function file_exists_case($filename)
 function import($class, $baseUrl = '', $ext = EXT)
 {
     static $_file = array();
-    $class        = str_replace(array('.', '#'), array('/', '.'), $class);
+    $class = str_replace(array('.', '#'), array('/', '.'), $class);
     if (isset($_file[$class . $baseUrl])) {
         return true;
     } else {
@@ -467,7 +478,7 @@ function import($class, $baseUrl = '', $ext = EXT)
         if ('@' == $class_strut[0] || MODULE_NAME == $class_strut[0]) {
             //加载当前模块的类库
             $baseUrl = MODULE_PATH;
-            $class   = substr_replace($class, '', 0, strlen($class_strut[0]) + 1);
+            $class = substr_replace($class, '', 0, strlen($class_strut[0]) + 1);
         } elseif (in_array($class_strut[0], array('Think', 'Org', 'Behavior', 'Com', 'Vendor')) || is_dir(LIB_PATH . $class_strut[0])) {
             // 系统类库包和第三方类库包
             $baseUrl = LIB_PATH;
@@ -502,12 +513,12 @@ function load($name, $baseUrl = '', $ext = '.php')
         if (0 === strpos($name, '@/')) {
             //加载当前模块函数库
             $baseUrl = MODULE_PATH . 'Common/';
-            $name    = substr($name, 2);
+            $name = substr($name, 2);
         } else {
             //加载其他模块函数库
-            $array   = explode('/', $name);
+            $array = explode('/', $name);
             $baseUrl = APP_PATH . array_shift($array) . '/Common/';
-            $name    = implode('/', $array);
+            $name = implode('/', $array);
         }
     }
     if (substr($baseUrl, -1) != '/') {
@@ -546,7 +557,7 @@ function D($name = '', $layer = '')
     }
 
     static $_model = array();
-    $layer         = $layer ?: C('DEFAULT_M_LAYER');
+    $layer = $layer ?: C('DEFAULT_M_LAYER');
     if (isset($_model[$name . $layer])) {
         return $_model[$name . $layer];
     }
@@ -633,15 +644,15 @@ function parse_res_name($name, $layer, $level = 1)
 function A($name, $layer = '', $level = '')
 {
     static $_action = array();
-    $layer          = $layer ?: C('DEFAULT_C_LAYER');
-    $level          = $level ?: (C('DEFAULT_C_LAYER') == $layer ? C('CONTROLLER_LEVEL') : 1);
+    $layer = $layer ?: C('DEFAULT_C_LAYER');
+    $level = $level ?: (C('DEFAULT_C_LAYER') == $layer ? C('CONTROLLER_LEVEL') : 1);
     if (isset($_action[$name . $layer])) {
         return $_action[$name . $layer];
     }
 
     $class = parse_res_name($name, $layer, $level);
     if (class_exists($class)) {
-        $action                  = new $class();
+        $action = new $class();
         $_action[$name . $layer] = $action;
         return $action;
     } else {
@@ -658,10 +669,10 @@ function A($name, $layer = '', $level = '')
  */
 function R($url, $vars = array(), $layer = '')
 {
-    $info   = pathinfo($url);
+    $info = pathinfo($url);
     $action = $info['basename'];
     $module = $info['dirname'];
-    $class  = A($module, $layer);
+    $class = A($module, $layer);
     if ($class) {
         if (is_string($vars)) {
             parse_str($vars, $vars);
@@ -697,7 +708,7 @@ function strip_whitespace($content)
 {
     $stripStr = '';
     //分析php源码
-    $tokens     = token_get_all($content);
+    $tokens = token_get_all($content);
     $last_space = false;
     for ($i = 0, $j = count($tokens); $i < $j; $i++) {
         if (is_string($tokens[$i])) {
@@ -767,7 +778,7 @@ function dump($var, $echo = true, $label = null, $strict = true)
         }
     }
     if ($echo) {
-        echo ($output);
+        echo($output);
         return null;
     } else {
         return $output;
@@ -796,7 +807,7 @@ function redirect($url, $time = 0, $msg = '')
             header('Location: ' . $url);
         } else {
             header("refresh:{$time};url={$url}");
-            echo ($msg);
+            echo($msg);
         }
         exit();
     } else {
@@ -821,11 +832,11 @@ function S($name, $value = '', $options = null)
     static $cache = '';
     if (is_array($options) && empty($cache)) {
         // 缓存操作的同时初始化
-        $type  = isset($options['type']) ? $options['type'] : '';
+        $type = isset($options['type']) ? $options['type'] : '';
         $cache = Think\Cache::getInstance($type, $options);
     } elseif (is_array($name)) {
         // 缓存初始化
-        $type  = isset($name['type']) ? $name['type'] : '';
+        $type = isset($name['type']) ? $name['type'] : '';
         $cache = Think\Cache::getInstance($type, $name);
         return $cache;
     } elseif (empty($cache)) {
@@ -859,7 +870,7 @@ function S($name, $value = '', $options = null)
 function F($name, $value = '', $path = DATA_PATH)
 {
     static $_cache = array();
-    $filename      = $path . $name . '.php';
+    $filename = $path . $name . '.php';
     if ('' !== $value) {
         if (is_null($value)) {
             // 删除缓存
@@ -882,7 +893,7 @@ function F($name, $value = '', $path = DATA_PATH)
     }
 
     if (Think\Storage::has($filename, 'F')) {
-        $value         = unserialize(Think\Storage::read($filename, 'F'));
+        $value = unserialize(Think\Storage::read($filename, 'F'));
         $_cache[$name] = $value;
     } else {
         $value = false;
@@ -913,7 +924,7 @@ function to_guid_string($mix)
  * @param string $root 根节点名
  * @param string $item 数字索引的子节点名
  * @param string $attr 根节点属性
- * @param string $id   数字索引子节点key转换的属性名
+ * @param string $id 数字索引子节点key转换的属性名
  * @param string $encoding 数据编码
  * @return string
  */
@@ -928,7 +939,7 @@ function xml_encode($data, $root = 'think', $item = 'item', $attr = '', $id = 'i
     }
     $attr = trim($attr);
     $attr = empty($attr) ? '' : " {$attr}";
-    $xml  = "<?xml version=\"1.0\" encoding=\"{$encoding}\"?>";
+    $xml = "<?xml version=\"1.0\" encoding=\"{$encoding}\"?>";
     $xml .= "<{$root}{$attr}>";
     $xml .= data_to_xml($data, $item, $id);
     $xml .= "</{$root}>";
@@ -937,9 +948,9 @@ function xml_encode($data, $root = 'think', $item = 'item', $attr = '', $id = 'i
 
 /**
  * 数据XML编码
- * @param mixed  $data 数据
+ * @param mixed $data 数据
  * @param string $item 数字索引时的节点名称
- * @param string $id   数字索引key转换为的属性名
+ * @param string $id 数字索引key转换为的属性名
  * @return string
  */
 function data_to_xml($data, $item = 'item', $id = 'id')
@@ -948,7 +959,7 @@ function data_to_xml($data, $item = 'item', $id = 'id')
     foreach ($data as $key => $val) {
         if (is_numeric($key)) {
             $id && $attr = " {$id}=\"{$key}\"";
-            $key         = $item;
+            $key = $item;
         }
         $xml .= "<{$key}{$attr}>";
         $xml .= (is_array($val) || is_object($val)) ? data_to_xml($val, $item, $id) : $val;
@@ -1019,8 +1030,8 @@ function session($name, $value = '')
 
         if (C('SESSION_TYPE')) {
             // 读取session驱动
-            $type   = C('SESSION_TYPE');
-            $class  = strpos($type, '\\') ? $type : 'Think\\Session\\Driver\\' . ucwords(strtolower($type));
+            $type = C('SESSION_TYPE');
+            $class = strpos($type, '\\') ? $type : 'Think\\Session\\Driver\\' . ucwords(strtolower($type));
             $hander = new $class();
             session_set_save_handler(
                 array(&$hander, "open"),
@@ -1119,7 +1130,7 @@ function cookie($name, $value = '', $option = null)
     $config = array(
         'prefix' => C('COOKIE_PREFIX'), // cookie 名称前缀
         'expire' => C('COOKIE_EXPIRE'), // cookie 保存时间
-        'path'   => C('COOKIE_PATH'), // cookie 保存路径
+        'path' => C('COOKIE_PATH'), // cookie 保存路径
         'domain' => C('COOKIE_DOMAIN'), // cookie 有效域名
     );
     // 参数设置(会覆盖黙认设置)
@@ -1220,7 +1231,7 @@ function load_ext_file($path)
  */
 function get_client_ip($type = 0)
 {
-    $type      = $type ? 1 : 0;
+    $type = $type ? 1 : 0;
     static $ip = null;
     if (null !== $ip) {
         return $ip[$type];
@@ -1241,7 +1252,7 @@ function get_client_ip($type = 0)
     }
     // IP地址合法验证
     $long = sprintf("%u", ip2long($ip));
-    $ip   = $long ? array($ip, $long) : array('0.0.0.0', 0);
+    $ip = $long ? array($ip, $long) : array('0.0.0.0', 0);
     return $ip[$type];
 }
 

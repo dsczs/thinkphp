@@ -20,7 +20,7 @@ class MongoModel extends Model
 {
     // 主键类型
     const TYPE_OBJECT = 1;
-    const TYPE_INT    = 2;
+    const TYPE_INT = 2;
     const TYPE_STRING = 3;
 
     // 主键名称
@@ -49,12 +49,12 @@ class MongoModel extends Model
             return $this;
         } elseif (strtolower(substr($method, 0, 5)) == 'getby') {
             // 根据某个字段获取记录
-            $field         = parse_name(substr($method, 5));
+            $field = parse_name(substr($method, 5));
             $where[$field] = $args[0];
             return $this->where($where)->find();
         } elseif (strtolower(substr($method, 0, 10)) == 'getfieldby') {
             // 根据某个字段获取记录的某个值
-            $name         = parse_name(substr($method, 10));
+            $name = parse_name(substr($method, 10));
             $where[$name] = $args[0];
             return $this->where($where)->getField($args[1]);
         } else {
@@ -95,14 +95,6 @@ class MongoModel extends Model
     }
 
     // 写入数据前的回调方法 包括新增和更新
-    protected function _before_write(&$data)
-    {
-        $pk = $this->getPk();
-        // 根据主键类型处理主键数据
-        if (isset($data[$pk]) && self::TYPE_OBJECT == $this->_idType) {
-            $data[$pk] = new \MongoId($data[$pk]);
-        }
-    }
 
     /**
      * count统计 配合where连贯操作
@@ -124,17 +116,29 @@ class MongoModel extends Model
     public function distinct($field, $where = array())
     {
         // 分析表达式
-        $this->options          = $this->_parseOptions();
-        $this->options['where'] = array_merge((array) $this->options['where'], $where);
+        $this->options = $this->_parseOptions();
+        $this->options['where'] = array_merge((array)$this->options['where'], $where);
 
         $command = array(
             "distinct" => $this->options['table'],
-            "key"      => $field,
-            "query"    => $this->options['where'],
+            "key" => $field,
+            "query" => $this->options['where'],
         );
 
         $result = $this->command($command);
         return isset($result['values']) ? $result['values'] : false;
+    }
+
+    /**
+     * 执行Mongo指令
+     * @access public
+     * @param array $command 指令
+     * @return mixed
+     */
+    public function command($command, $options = array())
+    {
+        $options = $this->_parseOptions($options);
+        return $this->db->command($command, $options);
     }
 
     /**
@@ -149,7 +153,7 @@ class MongoModel extends Model
             $pk = $this->getPk();
         }
         $options = $this->_parseOptions();
-        return $this->db->getMongoNextId($pk,$options);
+        return $this->db->getMongoNextId($pk, $options);
     }
 
     /**
@@ -210,9 +214,44 @@ class MongoModel extends Model
     }
 
     // 查询成功后的回调方法
-    protected function _after_select(&$resultSet, $options)
+
+    /**
+     * 查询多行数据
+     * @access public
+     * @param mixed $options 表达式参数
+     * @return mixed
+     */
+    public function select($options = array())
     {
-        array_walk($resultSet, array($this, 'checkMongoId'));
+        if (is_numeric($options) || is_string($options)) {
+            $id = $this->getPk();
+            $where[$id] = $options;
+            $options = array();
+            $options['where'] = $where;
+        }
+        // 分析表达式
+        $options = $this->_parseOptions($options);
+        $result = $this->db->select($options);
+        if (false === $result) {
+            return false;
+        }
+
+        if (empty($result)) {// 查询结果为空
+            return null;
+        } else {
+            $this->checkMongoId($result);
+        }
+
+        //$result是以主键为key的，所以需要处理一下
+        $data = array();
+        foreach ($result as $v) {
+            $data[] = $v;
+        }
+
+        $this->data = $data;
+        $this->_after_select($this->data, $options);
+
+        return $this->data;
     }
 
     /**
@@ -230,52 +269,10 @@ class MongoModel extends Model
     }
 
     // 表达式过滤回调方法
-    protected function _options_filter(&$options)
-    {
-        $id = $this->getPk();
-        if (isset($options['where'][$id]) && is_scalar($options['where'][$id]) && self::TYPE_OBJECT == $this->_idType) {
-            $options['where'][$id] = new \MongoId($options['where'][$id]);
-        }
-    }
 
-    /**
-     * 查询多行数据
-     * @access public
-     * @param mixed $options 表达式参数
-     * @return mixed
-     */
-    public function select($options = array())
+    protected function _after_select(&$resultSet, $options)
     {
-        if( is_numeric($options) || is_string($options)) {
-            $id = $this->getPk();
-            $where[$id] = $options;
-            $options = array();
-            $options['where'] = $where;
-        }
-        // 分析表达式
-        $options = $this->_parseOptions($options);
-        $result = $this->db->select($options);
-        if(false === $result) {
-            return false;
-        }
-        
-        if(empty($result)) {// 查询结果为空
-            return null;
-        }
-        else{
-            $this->checkMongoId($result);
-        }
-        
-        //$result是以主键为key的，所以需要处理一下
-        $data = array();
-        foreach($result as $v){
-            $data[] = $v;
-        }
-        
-        $this->data = $data;
-        $this->_after_select($this->data, $options);
-        
-        return $this->data;
+        array_walk($resultSet, array($this, 'checkMongoId'));
     }
 
     /**
@@ -287,14 +284,14 @@ class MongoModel extends Model
     public function find($options = array())
     {
         if (is_numeric($options) || is_string($options)) {
-            $id               = $this->getPk();
-            $where[$id]       = $options;
-            $options          = array();
+            $id = $this->getPk();
+            $where[$id] = $options;
+            $options = array();
             $options['where'] = $where;
         }
         // 分析表达式
         $options = $this->_parseOptions($options);
-        $result  = $this->db->find($options);
+        $result = $this->db->find($options);
         if (false === $result) {
             return false;
         }
@@ -312,8 +309,8 @@ class MongoModel extends Model
     /**
      * 字段值增长
      * @access public
-     * @param string $field  字段名
-     * @param integer $step  增长值
+     * @param string $field 字段名
+     * @param integer $step 增长值
      * @return boolean
      */
     public function setInc($field, $step = 1)
@@ -324,8 +321,8 @@ class MongoModel extends Model
     /**
      * 字段值减少
      * @access public
-     * @param string $field  字段名
-     * @param integer $step  减少值
+     * @param string $field 字段名
+     * @param integer $step 减少值
      * @return boolean
      */
     public function setDec($field, $step = 1)
@@ -336,28 +333,28 @@ class MongoModel extends Model
     /**
      * 获取一条记录的某个字段值
      * @access public
-     * @param string $field  字段名
-     * @param string $spea  字段数据间隔符号
+     * @param string $field 字段名
+     * @param string $spea 字段数据间隔符号
      * @return mixed
      */
     public function getField($field, $sepa = null)
     {
         $options['field'] = $field;
-        $options          = $this->_parseOptions($options);
+        $options = $this->_parseOptions($options);
         if (strpos($field, ',')) {
             // 多字段
             if (is_numeric($sepa)) { // 限定数量
                 $options['limit'] = $sepa;
-                $sepa             = null; // 重置为null 返回数组
+                $sepa = null; // 重置为null 返回数组
             }
             $resultSet = $this->db->select($options);
             if (!empty($resultSet)) {
                 $_field = explode(',', $field);
-                $field  = array_keys($resultSet[0]);
-                $key    = array_shift($field);
-                $key2   = array_shift($field);
-                $cols   = array();
-                $count  = count($_field);
+                $field = array_keys($resultSet[0]);
+                $key = array_shift($field);
+                $key2 = array_shift($field);
+                $cols = array();
+                $count = count($_field);
                 foreach ($resultSet as $result) {
                     $name = $result[$key];
                     if (2 == $count) {
@@ -390,53 +387,15 @@ class MongoModel extends Model
     }
 
     /**
-     * 执行Mongo指令
-     * @access public
-     * @param array $command  指令
-     * @return mixed
-     */
-    public function command($command, $options = array())
-    {
-        $options = $this->_parseOptions($options);
-        return $this->db->command($command, $options);
-    }
-
-    /**
      * 执行MongoCode
      * @access public
-     * @param string $code  MongoCode
-     * @param array $args   参数
+     * @param string $code MongoCode
+     * @param array $args 参数
      * @return mixed
      */
     public function mongoCode($code, $args = array())
     {
         return $this->db->execute($code, $args);
-    }
-
-    // 数据库切换后回调方法
-    protected function _after_db()
-    {
-        // 切换Collection
-        $this->db->switchCollection($this->getTableName(), $this->dbName ? $this->dbName : C('db_name'));
-    }
-
-    /**
-     * 得到完整的数据表名 Mongo表名不带dbName
-     * @access public
-     * @return string
-     */
-    public function getTableName()
-    {
-        if (empty($this->trueTableName)) {
-            $tableName = !empty($this->tablePrefix) ? $this->tablePrefix : '';
-            if (!empty($this->tableName)) {
-                $tableName .= $this->tableName;
-            } else {
-                $tableName .= parse_name($this->name);
-            }
-            $this->trueTableName = strtolower($tableName);
-        }
-        return $this->trueTableName;
     }
 
     /**
@@ -450,7 +409,7 @@ class MongoModel extends Model
 
         //合并查询条件
         if (isset($option['where'])) {
-            $option['condition'] = array_merge((array) $option['condition'], $option['where']);
+            $option['condition'] = array_merge((array)$option['condition'], $option['where']);
         }
 
         return $this->db->group($key, $init, $reduce, $option);
@@ -465,6 +424,8 @@ class MongoModel extends Model
     {
         return $this->db->command(array('getLastError' => 1));
     }
+
+    // 数据库切换后回调方法
 
     /**
      * 返回指定集合的统计信息，包括数据大小、已分配的存储空间和索引的大小
@@ -495,5 +456,47 @@ class MongoModel extends Model
     public function getCollection()
     {
         return $this->db->getCollection();
+    }
+
+    protected function _before_write(&$data)
+    {
+        $pk = $this->getPk();
+        // 根据主键类型处理主键数据
+        if (isset($data[$pk]) && self::TYPE_OBJECT == $this->_idType) {
+            $data[$pk] = new \MongoId($data[$pk]);
+        }
+    }
+
+    protected function _options_filter(&$options)
+    {
+        $id = $this->getPk();
+        if (isset($options['where'][$id]) && is_scalar($options['where'][$id]) && self::TYPE_OBJECT == $this->_idType) {
+            $options['where'][$id] = new \MongoId($options['where'][$id]);
+        }
+    }
+
+    protected function _after_db()
+    {
+        // 切换Collection
+        $this->db->switchCollection($this->getTableName(), $this->dbName ? $this->dbName : C('db_name'));
+    }
+
+    /**
+     * 得到完整的数据表名 Mongo表名不带dbName
+     * @access public
+     * @return string
+     */
+    public function getTableName()
+    {
+        if (empty($this->trueTableName)) {
+            $tableName = !empty($this->tablePrefix) ? $this->tablePrefix : '';
+            if (!empty($this->tableName)) {
+                $tableName .= $this->tableName;
+            } else {
+                $tableName .= parse_name($this->name);
+            }
+            $this->trueTableName = strtolower($tableName);
+        }
+        return $this->trueTableName;
     }
 }

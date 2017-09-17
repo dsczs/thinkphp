@@ -22,26 +22,11 @@ class Sqlsrv extends Driver
     protected $selectSql = 'SELECT T1.* FROM (SELECT thinkphp.*, ROW_NUMBER() OVER (%ORDER%) AS ROW_NUMBER FROM (SELECT %DISTINCT% %FIELD% FROM %TABLE%%JOIN%%WHERE%%GROUP%%HAVING% %UNION%) AS thinkphp) AS T1 %LIMIT%%COMMENT%';
     // PDO连接参数
     protected $options = array(
-        PDO::ATTR_CASE              => PDO::CASE_LOWER,
-        PDO::ATTR_ERRMODE           => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_CASE => PDO::CASE_LOWER,
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_STRINGIFY_FETCHES => false,
-        PDO::SQLSRV_ATTR_ENCODING   => PDO::SQLSRV_ENCODING_UTF8,
+        PDO::SQLSRV_ATTR_ENCODING => PDO::SQLSRV_ENCODING_UTF8,
     );
-
-    /**
-     * 解析pdo连接的dsn信息
-     * @access public
-     * @param array $config 连接信息
-     * @return string
-     */
-    protected function parseDsn($config)
-    {
-        $dsn = 'sqlsrv:Database=' . $config['database'] . ';Server=' . $config['hostname'];
-        if (!empty($config['hostport'])) {
-            $dsn .= ',' . $config['hostport'];
-        }
-        return $dsn;
-    }
 
     /**
      * 取得数据表的字段信息
@@ -51,7 +36,7 @@ class Sqlsrv extends Driver
     public function getFields($tableName)
     {
         list($tableName) = explode(' ', $tableName);
-        $result          = $this->query("SELECT   column_name,   data_type,   column_default,   is_nullable
+        $result = $this->query("SELECT   column_name,   data_type,   column_default,   is_nullable
         FROM    information_schema.tables AS t
         JOIN    information_schema.columns AS c
         ON  t.table_catalog = c.table_catalog
@@ -62,9 +47,9 @@ class Sqlsrv extends Driver
         if ($result) {
             foreach ($result as $key => $val) {
                 $info[$val['column_name']] = array(
-                    'name'    => $val['column_name'],
-                    'type'    => $val['data_type'],
-                    'notnull' => (bool) ('' === $val['is_nullable']), // not null is empty, null is yes
+                    'name' => $val['column_name'],
+                    'type' => $val['data_type'],
+                    'notnull' => (bool)('' === $val['is_nullable']), // not null is empty, null is yes
                     'default' => $val['column_default'],
                     'primary' => false,
                     'autoinc' => false,
@@ -90,32 +75,6 @@ class Sqlsrv extends Driver
             $info[$key] = current($val);
         }
         return $info;
-    }
-
-    /**
-     * order分析
-     * @access protected
-     * @param mixed $order
-     * @return string
-     */
-    protected function parseOrder($order)
-    {
-        return !empty($order) ? ' ORDER BY ' . $order : ' ORDER BY rand()';
-    }
-
-    /**
-     * 字段名分析
-     * @access protected
-     * @param string $key
-     * @return string
-     */
-    protected function parseKey($key)
-    {
-        $key = trim($key);
-        if (!is_numeric($key) && !preg_match('/[,\'\"\*\(\)\[.\s]/', $key)) {
-            $key = '[' . $key . ']';
-        }
-        return $key;
     }
 
     /**
@@ -152,11 +111,11 @@ class Sqlsrv extends Driver
         $this->model = $options['model'];
         $this->parseBind(!empty($options['bind']) ? $options['bind'] : array());
         $sql = 'UPDATE '
-        . $this->parseTable($options['table'])
-        . $this->parseSet($data)
-        . $this->parseWhere(!empty($options['where']) ? $options['where'] : '')
-        . $this->parseLock(isset($options['lock']) ? $options['lock'] : false)
-        . $this->parseComment(!empty($options['comment']) ? $options['comment'] : '');
+            . $this->parseTable($options['table'])
+            . $this->parseSet($data)
+            . $this->parseWhere(!empty($options['where']) ? $options['where'] : '')
+            . $this->parseLock(isset($options['lock']) ? $options['lock'] : false)
+            . $this->parseComment(!empty($options['comment']) ? $options['comment'] : '');
         return $this->execute($sql, !empty($options['fetch_sql']) ? true : false);
     }
 
@@ -171,11 +130,52 @@ class Sqlsrv extends Driver
         $this->model = $options['model'];
         $this->parseBind(!empty($options['bind']) ? $options['bind'] : array());
         $sql = 'DELETE FROM '
-        . $this->parseTable($options['table'])
-        . $this->parseWhere(!empty($options['where']) ? $options['where'] : '')
-        . $this->parseLock(isset($options['lock']) ? $options['lock'] : false)
-        . $this->parseComment(!empty($options['comment']) ? $options['comment'] : '');
+            . $this->parseTable($options['table'])
+            . $this->parseWhere(!empty($options['where']) ? $options['where'] : '')
+            . $this->parseLock(isset($options['lock']) ? $options['lock'] : false)
+            . $this->parseComment(!empty($options['comment']) ? $options['comment'] : '');
         return $this->execute($sql, !empty($options['fetch_sql']) ? true : false);
+    }
+
+    /**
+     * 解析pdo连接的dsn信息
+     * @access public
+     * @param array $config 连接信息
+     * @return string
+     */
+    protected function parseDsn($config)
+    {
+        $dsn = 'sqlsrv:Database=' . $config['database'] . ';Server=' . $config['hostname'];
+        if (!empty($config['hostport'])) {
+            $dsn .= ',' . $config['hostport'];
+        }
+        return $dsn;
+    }
+
+    /**
+     * order分析
+     * @access protected
+     * @param mixed $order
+     * @return string
+     */
+    protected function parseOrder($order)
+    {
+        return !empty($order) ? ' ORDER BY ' . $order : ' ORDER BY rand()';
+    }
+
+    /**
+     * 字段名分析
+     * @access protected
+     * @param string $key
+     * @return string
+     */
+    protected function parseKey($key)
+    {
+        $key = trim($key);
+        if (!is_numeric($key) && !preg_match('/[,\'\"\*\(\)\[.\s]/', $key)) {
+            $key = '[' . $key . ']';
+        }
+        return $key;
     }
 
 }

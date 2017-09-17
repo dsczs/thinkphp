@@ -245,16 +245,48 @@ class Dispatcher
     }
 
     /**
-     * 获得控制器的命名空间路径 便于插件机制访问
-     * @param  boolean $urlCase 是否转换成小写
+     * 获得实际的模块名称
+     * @param  array $paths path_info数组
      * @return string
      */
-    private static function getSpace($urlCase)
+    private static function getModule(&$paths)
     {
-        $var = C('VAR_ADDON');
-        $space = !empty($_GET[$var]) ? strip_tags($_GET[$var]) : '';
-        unset($_GET[$var]);
-        return $space;
+        if (defined('BIND_MODULE')) {
+            return BIND_MODULE;
+        } else {
+            // 检查路由
+            if ($paths && C('URL_ROUTER_ON') && Route::check($paths)) {
+                $paths = explode(MODULE_PATHINFO_DEPR, trim($_SERVER['PATH_INFO'], MODULE_PATHINFO_DEPR));
+            }
+            if ($paths && C('MULTI_MODULE')) { // 获取模块名
+                $allowList = C('MODULE_ALLOW_LIST'); // 允许的模块列表
+                if (empty($allowList) || (is_array($allowList) && in_array_case($paths[0], $allowList))) {
+                    $module = array_shift($paths);
+                    $_SERVER['PATH_INFO'] = implode(MODULE_PATHINFO_DEPR, $paths);
+                }
+            } else {
+                $var = C('VAR_MODULE');
+                if (!empty($_GET[$var])) {
+                    $module = $_GET[$var];
+                    unset($_GET[$var]);
+                }
+            }
+            if (empty($module)) {
+                $module = C('DEFAULT_MODULE');
+            }
+        }
+        if ($maps = C('URL_MODULE_MAP')) {
+            if (isset($maps[strtolower($module)])) {
+                // 记录当前别名
+                define('MODULE_ALIAS', strtolower($module));
+                // 获取实际的模块名
+                return ucfirst($maps[MODULE_ALIAS]);
+            } elseif (array_search(strtolower($module), $maps) || in_array_case($module, C('MODULE_DENY_LIST'))) {
+                // 禁止访问原始模块
+                return '';
+            }
+        }
+        return strip_tags(ucfirst($module));
     }
 
     /**
@@ -361,48 +393,16 @@ class Dispatcher
     }
 
     /**
-     * 获得实际的模块名称
-     * @param  array $paths path_info数组
+     * 获得控制器的命名空间路径 便于插件机制访问
+     * @param  boolean $urlCase 是否转换成小写
      * @return string
      */
-    private static function getModule(&$paths)
+    private static function getSpace($urlCase)
     {
-        if (defined('BIND_MODULE')) {
-            return BIND_MODULE;
-        } else {
-            // 检查路由
-            if ($paths && C('URL_ROUTER_ON') && Route::check($paths)) {
-                $paths = explode(MODULE_PATHINFO_DEPR, trim($_SERVER['PATH_INFO'], MODULE_PATHINFO_DEPR));
-            }
-            if ($paths && C('MULTI_MODULE')) { // 获取模块名
-                $allowList = C('MODULE_ALLOW_LIST'); // 允许的模块列表
-                if (empty($allowList) || (is_array($allowList) && in_array_case($paths[0], $allowList))) {
-                    $module = array_shift($paths);
-                    $_SERVER['PATH_INFO'] = implode(MODULE_PATHINFO_DEPR, $paths);
-                }
-            } else {
-                $var = C('VAR_MODULE');
-                if (!empty($_GET[$var])) {
-                    $module = $_GET[$var];
-                    unset($_GET[$var]);
-                }
-            }
-            if (empty($module)) {
-                $module = C('DEFAULT_MODULE');
-            }
-        }
-        if ($maps = C('URL_MODULE_MAP')) {
-            if (isset($maps[strtolower($module)])) {
-                // 记录当前别名
-                define('MODULE_ALIAS', strtolower($module));
-                // 获取实际的模块名
-                return ucfirst($maps[MODULE_ALIAS]);
-            } elseif (array_search(strtolower($module), $maps) || in_array_case($module, C('MODULE_DENY_LIST'))) {
-                // 禁止访问原始模块
-                return '';
-            }
-        }
-        return strip_tags(ucfirst($module));
+        $var = C('VAR_ADDON');
+        $space = !empty($_GET[$var]) ? strip_tags($_GET[$var]) : '';
+        unset($_GET[$var]);
+        return $space;
     }
 
 }

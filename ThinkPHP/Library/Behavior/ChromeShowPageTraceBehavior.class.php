@@ -26,10 +26,10 @@
  * headers输出，你可以在入口文件第一行加入代码 ob_start(); 或者配置output_buffering
  *
  */
+
 namespace Behavior;
 
 use Behavior\ChromePhp as ChromePhp;
-use Think\Log;
 
 /**
  * 系统行为扩展 页面Trace显示输出
@@ -56,15 +56,15 @@ class ChromeShowPageTraceBehavior
     {
         // 系统默认显示信息
         $files = get_included_files();
-        $info  = array();
+        $info = array();
         foreach ($files as $key => $file) {
             $info[] = $file . ' ( ' . number_format(filesize($file) / 1024, 2) . ' KB )';
         }
         $trace = array();
-        $base  = array(
+        $base = array(
             '请求信息' => date('Y-m-d H:i:s', $_SERVER['REQUEST_TIME']) . ' ' . $_SERVER['SERVER_PROTOCOL'] . ' ' . $_SERVER['REQUEST_METHOD'] . ' : ' . __SELF__,
             '运行时间' => $this->showTime(),
-            '吞吐率'    => number_format(1 / G('beginTime', 'viewEndTime'), 2) . 'req/s',
+            '吞吐率' => number_format(1 / G('beginTime', 'viewEndTime'), 2) . 'req/s',
             '内存开销' => MEMORY_LIMIT_ON ? number_format((memory_get_usage() - $GLOBALS['_startUseMems']) / 1024, 2) . ' kb' : '不支持',
             '查询信息' => N('db_query') . ' queries ' . N('db_write') . ' writes ',
             '文件加载' => count(get_included_files()),
@@ -79,7 +79,7 @@ class ChromeShowPageTraceBehavior
         }
 
         $debug = trace();
-        $tabs  = C('TRACE_PAGE_TABS', null, $this->tracePageTabs);
+        $tabs = C('TRACE_PAGE_TABS', null, $this->tracePageTabs);
         foreach ($tabs as $name => $title) {
             switch (strtoupper($name)) {
                 case 'BASE': // 基本信息
@@ -92,7 +92,7 @@ class ChromeShowPageTraceBehavior
                     $name = strtoupper($name);
                     if (strpos($name, '|')) {
 // 多组信息
-                        $array  = explode('|', $name);
+                        $array = explode('|', $name);
                         $result = array();
                         foreach ($array as $name) {
                             $result += isset($debug[$name]) ? $debug[$name] : array();
@@ -116,7 +116,7 @@ class ChromeShowPageTraceBehavior
         if ($save = C('PAGE_TRACE_SAVE')) {
             // 保存页面Trace日志
             if (is_array($save)) { // 选择选项卡保存
-                $tabs  = C('TRACE_PAGE_TABS', null, $this->tracePageTabs);
+                $tabs = C('TRACE_PAGE_TABS', null, $this->tracePageTabs);
                 $array = array();
                 foreach ($save as $tab) {
                     $array[] = $tabs[$tab];
@@ -153,6 +153,7 @@ class ChromeShowPageTraceBehavior
         return G('beginTime', 'viewEndTime') . 's ( Load:' . G('beginTime', 'loadTime') . 's Init:' . G('loadTime', 'initTime') . 's Exec:' . G('initTime', 'viewStartTime') . 's Template:' . G('viewStartTime', 'viewEndTime') . 's )';
     }
 }
+
 if (!function_exists('chrome_debug')) {
 //ChromePhp 输出trace的函数
     function chromeDebug($msg, $type = 'trace', $trace_level = 1)
@@ -161,12 +162,12 @@ if (!function_exists('chrome_debug')) {
             ChromePhp::groupCollapsed($msg);
             $traces = debug_backtrace(false);
             $traces = array_reverse($traces);
-            $max    = count($traces) - $trace_level;
+            $max = count($traces) - $trace_level;
             for ($i = 0; $i < $max; $i++) {
-                $trace     = $traces[$i];
-                $fun       = isset($trace['class']) ? $trace['class'] . '::' . $trace['function'] : $trace['function'];
-                $file      = isset($trace['file']) ? $trace['file'] : 'unknown file';
-                $line      = isset($trace['line']) ? $trace['line'] : 'unknown line';
+                $trace = $traces[$i];
+                $fun = isset($trace['class']) ? $trace['class'] . '::' . $trace['function'] : $trace['function'];
+                $file = isset($trace['file']) ? $trace['file'] : 'unknown file';
+                $line = isset($trace['line']) ? $trace['line'] : 'unknown line';
                 $trace_msg = '#' . $i . '  ' . $fun . ' called at [' . $file . ':' . $line . ']';
                 if (!empty($trace['args'])) {
                     ChromePhp::groupCollapsed($trace_msg);
@@ -188,12 +189,12 @@ if (!function_exists('chrome_debug')) {
         }
     }
 
-/**
- * Server Side Chrome PHP debugger class
- *
- * @package ChromePhp
- * @author Craig Campbell <iamcraigcampbell@gmail.com>
- */
+    /**
+     * Server Side Chrome PHP debugger class
+     *
+     * @package ChromePhp
+     * @author Craig Campbell <iamcraigcampbell@gmail.com>
+     */
     class ChromePhp
     {
         /**
@@ -267,7 +268,7 @@ if (!function_exists('chrome_debug')) {
         protected $_json = array(
             'version' => self::VERSION,
             'columns' => array('log', 'backtrace', 'type'),
-            'rows'    => array(),
+            'rows' => array(),
         );
 
         /**
@@ -304,8 +305,8 @@ if (!function_exists('chrome_debug')) {
          */
         private function __construct()
         {
-            $this->_php_version         = phpversion();
-            $this->_timestamp           = $this->_php_version >= 5.1 ? $_SERVER['REQUEST_TIME'] : time();
+            $this->_php_version = phpversion();
+            $this->_timestamp = $this->_php_version >= 5.1 ? $_SERVER['REQUEST_TIME'] : time();
             $this->_json['request_uri'] = $_SERVER['REQUEST_URI'];
         }
 
@@ -437,7 +438,7 @@ if (!function_exists('chrome_debug')) {
             }
 
             $backtrace = debug_backtrace(false);
-            $level     = $logger->getSetting(self::BACKTRACE_LEVEL);
+            $level = $logger->getSetting(self::BACKTRACE_LEVEL);
 
             $backtrace_message = 'unknown';
             if (isset($backtrace[$level]['file']) && isset($backtrace[$level]['line'])) {

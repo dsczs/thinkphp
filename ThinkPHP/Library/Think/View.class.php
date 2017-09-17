@@ -82,32 +82,6 @@ class View
     }
 
     /**
-     * 输出内容文本可以包括Html
-     * @access private
-     * @param string $content 输出内容
-     * @param string $charset 模板输出字符集
-     * @param string $contentType 输出类型
-     * @return mixed
-     */
-    private function render($content, $charset = '', $contentType = '')
-    {
-        if (empty($charset)) {
-            $charset = C('DEFAULT_CHARSET');
-        }
-
-        if (empty($contentType)) {
-            $contentType = C('TMPL_CONTENT_TYPE');
-        }
-
-        // 网页字符编码
-        header('Content-Type:' . $contentType . '; charset=' . $charset);
-        header('Cache-control: ' . C('HTTP_CACHE_CONTROL')); // 页面缓存控制
-        header('X-Powered-By:ThinkPHP');
-        // 输出模板文件
-        echo $content;
-    }
-
-    /**
      * 解析和获取模板内容 用于输出
      * @access public
      * @param string $templateFile 模板文件名
@@ -161,7 +135,7 @@ class View
         if (APP_DEBUG && C('PARSE_VAR')) {
             // debug模式时，将后台分配变量输出到浏览器控制台
             $parseVar = empty($this->tVar) ? json_encode(array()) : json_encode($this->tVar);
-            $content  = $content . '<script type="text/javascript">var PARSE_VAR = ' . $parseVar . ';</script>';
+            $content = $content . '<script type="text/javascript">var PARSE_VAR = ' . $parseVar . ';</script>';
         }
         // 输出模板文件
         return $content;
@@ -178,7 +152,7 @@ class View
         if (is_file($template)) {
             return $template;
         }
-        $depr     = C('TMPL_FILE_DEPR');
+        $depr = C('TMPL_FILE_DEPR');
         $template = str_replace(':', $depr, $template);
 
         // 获取当前模块
@@ -225,18 +199,6 @@ class View
     }
 
     /**
-     * 设置当前输出的模板主题
-     * @access public
-     * @param  mixed $theme 主题名称
-     * @return View
-     */
-    public function theme($theme)
-    {
-        $this->theme = $theme;
-        return $this;
-    }
-
-    /**
      * 获取当前的模板主题
      * @access private
      * @return string
@@ -265,6 +227,44 @@ class View
         }
         defined('THEME_NAME') || define('THEME_NAME', $theme); // 当前模板主题名称
         return $theme ? $theme . '/' : '';
+    }
+
+    /**
+     * 输出内容文本可以包括Html
+     * @access private
+     * @param string $content 输出内容
+     * @param string $charset 模板输出字符集
+     * @param string $contentType 输出类型
+     * @return mixed
+     */
+    private function render($content, $charset = '', $contentType = '')
+    {
+        if (empty($charset)) {
+            $charset = C('DEFAULT_CHARSET');
+        }
+
+        if (empty($contentType)) {
+            $contentType = C('TMPL_CONTENT_TYPE');
+        }
+
+        // 网页字符编码
+        header('Content-Type:' . $contentType . '; charset=' . $charset);
+        header('Cache-control: ' . C('HTTP_CACHE_CONTROL')); // 页面缓存控制
+        header('X-Powered-By:ThinkPHP');
+        // 输出模板文件
+        echo $content;
+    }
+
+    /**
+     * 设置当前输出的模板主题
+     * @access public
+     * @param  mixed $theme 主题名称
+     * @return View
+     */
+    public function theme($theme)
+    {
+        $this->theme = $theme;
+        return $this;
     }
 
 }

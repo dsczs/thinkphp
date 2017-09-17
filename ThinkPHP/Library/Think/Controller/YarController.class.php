@@ -46,5 +46,6 @@ class YarController
      * @return mixed
      */
     public function __call($method, $args)
-    {}
+    {
+    }
 }

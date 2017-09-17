@@ -17,7 +17,7 @@ class RpcController
 {
 
     protected $allowMethodList = '';
-    protected $debug           = false;
+    protected $debug = false;
 
     /**
      * 架构函数
@@ -58,5 +58,6 @@ class RpcController
      * @return mixed
      */
     public function __call($method, $args)
-    {}
+    {
+    }
 }

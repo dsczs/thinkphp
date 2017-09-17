@@ -1,4 +1,5 @@
 <?php
+
 namespace Think\Upload\Driver\Bcs;
 
 /**
@@ -12,8 +13,29 @@ namespace Think\Upload\Driver\Bcs;
  * @license http://opensource.org/licenses/bsd-license.php Simplified BSD License
  */
 use Think\Upload\Driver\Bcs\BCS_RequestCore_Exception as BCS_RequestCore_Exception;
+
 class BcsRequestcore
 {
+    /**
+     * GET HTTP Method
+     */
+    const HTTP_GET = 'GET';
+    /**
+     * POST HTTP Method
+     */
+    const HTTP_POST = 'POST';
+    /**
+     * PUT HTTP Method
+     */
+    const HTTP_PUT = 'PUT';
+    /**
+     * DELETE HTTP Method
+     */
+    const HTTP_DELETE = 'DELETE';
+    /**
+     * HEAD HTTP Method
+     */
+    const HTTP_HEAD = 'HEAD';
     /**
      * The URL being requested.
      */
@@ -102,6 +124,8 @@ class BcsRequestcore
      * The length already read from the stream.
      */
     public $read_stream_read = 0;
+    /*%******************************************************************************************%*/
+    // CONSTANTS
     /**
      * File to write to while streaming down.
      */
@@ -122,31 +146,10 @@ class BcsRequestcore
      * The user-defined callback function to call when a stream is written to.
      */
     public $registered_streaming_write_callback = null;
-    /*%******************************************************************************************%*/
-    // CONSTANTS
-    /**
-     * GET HTTP Method
-     */
-    const HTTP_GET = 'GET';
-    /**
-     * POST HTTP Method
-     */
-    const HTTP_POST = 'POST';
-    /**
-     * PUT HTTP Method
-     */
-    const HTTP_PUT = 'PUT';
-    /**
-     * DELETE HTTP Method
-     */
-    const HTTP_DELETE = 'DELETE';
-    /**
-     * HEAD HTTP Method
-     */
-    const HTTP_HEAD = 'HEAD';
 
     /*%******************************************************************************************%*/
     // CONSTRUCTOR/DESTRUCTOR
+
     /**
      * Constructs a new instance of this class.
      *
@@ -158,10 +161,10 @@ class BcsRequestcore
     public function __construct($url = null, $proxy = null, $helpers = null)
     {
         // Set some default values.
-        $this->request_url     = $url;
-        $this->method          = self::HTTP_GET;
+        $this->request_url = $url;
+        $this->method = self::HTTP_GET;
         $this->request_headers = array();
-        $this->request_body    = '';
+        $this->request_body = '';
         // Set a new Request class if one was set.
         if (isset($helpers['request']) && !empty($helpers['request'])) {
             $this->request_class = $helpers['request'];
@@ -175,6 +178,25 @@ class BcsRequestcore
         }
         return $this;
     }
+
+    /**
+     * Set the proxy to use for making requests.
+     *
+     * @param string $proxy (Required) The faux-url to use for proxy settings. Takes the following format: `proxy://user:pass@hostname:port`
+     * @return $this A reference to the current instance.
+     */
+    public function setProxy($proxy)
+    {
+        $proxy = parse_url($proxy);
+        $proxy['user'] = isset($proxy['user']) ? $proxy['user'] : null;
+        $proxy['pass'] = isset($proxy['pass']) ? $proxy['pass'] : null;
+        $proxy['port'] = isset($proxy['port']) ? $proxy['port'] : null;
+        $this->proxy = $proxy;
+        return $this;
+    }
+
+    /*%******************************************************************************************%*/
+    // REQUEST METHODS
 
     /**
      * Destructs the instance. Closes opened file handles.
@@ -192,8 +214,6 @@ class BcsRequestcore
         return $this;
     }
 
-    /*%******************************************************************************************%*/
-    // REQUEST METHODS
     /**
      * Sets the credentials to use for authentication.
      *
@@ -297,15 +317,16 @@ class BcsRequestcore
     }
 
     /**
-     * Sets the length in bytes to read from the stream while streaming up.
+     * Sets the file to read from while streaming up.
      *
-     * @param integer $size (Required) The length in bytes to read from the stream.
+     * @param string $location (Required) The readable location to read from.
      * @return $this A reference to the current instance.
      */
-    public function setReadStreamSize($size)
+    public function setReadFile($location)
     {
-        $this->read_stream_size = $size;
-        return $this;
+        $this->read_file = $location;
+        $read_file_handle = fopen($location, 'r');
+        return $this->setReadStream($read_file_handle);
     }
 
     /**
@@ -333,16 +354,28 @@ class BcsRequestcore
     }
 
     /**
-     * Sets the file to read from while streaming up.
+     * Sets the length in bytes to read from the stream while streaming up.
      *
-     * @param string $location (Required) The readable location to read from.
+     * @param integer $size (Required) The length in bytes to read from the stream.
      * @return $this A reference to the current instance.
      */
-    public function setReadFile($location)
+    public function setReadStreamSize($size)
     {
-        $this->read_file  = $location;
-        $read_file_handle = fopen($location, 'r');
-        return $this->setReadStream($read_file_handle);
+        $this->read_stream_size = $size;
+        return $this;
+    }
+
+    /**
+     * Sets the file to write to while streaming down.
+     *
+     * @param string $location (Required) The writeable location to write to.
+     * @return $this A reference to the current instance.
+     */
+    public function setWriteFile($location)
+    {
+        $this->write_file = $location;
+        $write_file_handle = fopen($location, 'w');
+        return $this->setWriteStream($write_file_handle);
     }
 
     /**
@@ -358,35 +391,6 @@ class BcsRequestcore
     }
 
     /**
-     * Sets the file to write to while streaming down.
-     *
-     * @param string $location (Required) The writeable location to write to.
-     * @return $this A reference to the current instance.
-     */
-    public function setWriteFile($location)
-    {
-        $this->write_file  = $location;
-        $write_file_handle = fopen($location, 'w');
-        return $this->setWriteStream($write_file_handle);
-    }
-
-    /**
-     * Set the proxy to use for making requests.
-     *
-     * @param string $proxy (Required) The faux-url to use for proxy settings. Takes the following format: `proxy://user:pass@hostname:port`
-     * @return $this A reference to the current instance.
-     */
-    public function setProxy($proxy)
-    {
-        $proxy         = parse_url($proxy);
-        $proxy['user'] = isset($proxy['user']) ? $proxy['user'] : null;
-        $proxy['pass'] = isset($proxy['pass']) ? $proxy['pass'] : null;
-        $proxy['port'] = isset($proxy['port']) ? $proxy['port'] : null;
-        $this->proxy   = $proxy;
-        return $this;
-    }
-
-    /**
      * Set the intended starting seek position.
      *
      * @param integer $position (Required) The byte-position of the stream to begin reading from.
@@ -394,7 +398,7 @@ class BcsRequestcore
      */
     public function setSeekPosition($position)
     {
-        $this->seek_position = isset($position) ? (integer) $position : null;
+        $this->seek_position = isset($position) ? (integer)$position : null;
         return $this;
     }
 
@@ -487,9 +491,9 @@ class BcsRequestcore
      */
     public function streamingWriteCallback($curl_handle, $data)
     {
-        $length        = strlen($data);
+        $length = strlen($data);
         $written_total = 0;
-        $written_last  = 0;
+        $written_last = 0;
         while ($written_total < $length) {
             $written_last = fwrite($this->write_stream, substr($data, $written_total));
             if (false === $written_last) {
@@ -502,6 +506,56 @@ class BcsRequestcore
             call_user_func($this->registered_streaming_write_callback, $curl_handle, $written_total);
         }
         return $written_total;
+    }
+
+    /**
+     * Sends the request, calling necessary utility functions to update built-in properties.
+     *
+     * @param boolean $parse (Optional) Whether to parse the response with BCS_ResponseCore or not.
+     * @return string The resulting unparsed data from the request.
+     */
+    public function sendRequest($parse = false)
+    {
+        if (false === $this->isBaeEnv()) {
+            set_time_limit(0);
+        }
+        $curl_handle = $this->prepRequest();
+        $this->response = curl_exec($curl_handle);
+        if (false === $this->response ||
+            (self::HTTP_GET === $this->method &&
+                curl_errno($curl_handle) === CURLE_PARTIAL_FILE)
+        ) {
+            throw new BCS_RequestCore_Exception('cURL resource: ' . (string)$curl_handle . '; cURL error: ' . curl_error($curl_handle) . ' (' . curl_errno($curl_handle) . ')');
+        }
+        $parsed_response = $this->processResponse($curl_handle, $this->response);
+        curl_close($curl_handle);
+        if ($parse) {
+            return $parsed_response;
+        }
+        return $this->response;
+    }
+
+    /**
+     * is the environment BAE?
+     * @return boolean the result of the answer
+     */
+    private function isBaeEnv()
+    {
+        if (isset($_SERVER['HTTP_HOST'])) {
+            $host = $_SERVER['HTTP_HOST'];
+            $pos = strpos($host, '.');
+            if (false !== $pos) {
+                $substr = substr($host, $pos + 1);
+                if ('duapp.com' == $substr) {
+                    return true;
+                }
+            }
+        }
+        if (isset($_SERVER["HTTP_BAE_LOGID"])) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -608,29 +662,6 @@ class BcsRequestcore
     }
 
     /**
-     * is the environment BAE?
-     * @return boolean the result of the answer
-     */
-    private function isBaeEnv()
-    {
-        if (isset($_SERVER['HTTP_HOST'])) {
-            $host = $_SERVER['HTTP_HOST'];
-            $pos  = strpos($host, '.');
-            if (false !== $pos) {
-                $substr = substr($host, $pos + 1);
-                if ('duapp.com' == $substr) {
-                    return true;
-                }
-            }
-        }
-        if (isset($_SERVER["HTTP_BAE_LOGID"])) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
      * Take the post-processed cURL data and break it down into useful header/body/info chunks. Uses the
      * data stored in the `curl_handle` and `response` properties unless replacement data is passed in via
      * parameters.
@@ -644,16 +675,16 @@ class BcsRequestcore
         // Accept a custom one if it's passed.
         if ($curl_handle && $response) {
             $this->curl_handle = $curl_handle;
-            $this->response    = $response;
+            $this->response = $response;
         }
         // As long as this came back as a valid resource...
         if (is_resource($this->curl_handle)) {
             // Determine what's what.
-            $header_size            = curl_getinfo($this->curl_handle, CURLINFO_HEADER_SIZE);
+            $header_size = curl_getinfo($this->curl_handle, CURLINFO_HEADER_SIZE);
             $this->response_headers = substr($this->response, 0, $header_size);
-            $this->response_body    = substr($this->response, $header_size);
-            $this->response_code    = curl_getinfo($this->curl_handle, CURLINFO_HTTP_CODE);
-            $this->response_info    = curl_getinfo($this->curl_handle);
+            $this->response_body = substr($this->response, $header_size);
+            $this->response_code = curl_getinfo($this->curl_handle, CURLINFO_HTTP_CODE);
+            $this->response_info = curl_getinfo($this->curl_handle);
             // Parse out the headers
             $this->response_headers = explode("\r\n\r\n", trim($this->response_headers));
             $this->response_headers = array_pop($this->response_headers);
@@ -667,8 +698,8 @@ class BcsRequestcore
                 $header_assoc[$kv[0]] = $kv[1];
             }
             // Reset the headers to the appropriate property.
-            $this->response_headers                    = $header_assoc;
-            $this->response_headers['_info']           = $this->response_info;
+            $this->response_headers = $header_assoc;
+            $this->response_headers['_info'] = $this->response_info;
             $this->response_headers['_info']['method'] = $this->method;
             if ($curl_handle && $response) {
                 $class = '\Think\Upload\Driver\Bcs\\' . $this->response_class;
@@ -677,32 +708,6 @@ class BcsRequestcore
         }
         // Return false
         return false;
-    }
-
-    /**
-     * Sends the request, calling necessary utility functions to update built-in properties.
-     *
-     * @param boolean $parse (Optional) Whether to parse the response with BCS_ResponseCore or not.
-     * @return string The resulting unparsed data from the request.
-     */
-    public function sendRequest($parse = false)
-    {
-        if (false === $this->isBaeEnv()) {
-            set_time_limit(0);
-        }
-        $curl_handle    = $this->prepRequest();
-        $this->response = curl_exec($curl_handle);
-        if (false === $this->response ||
-            (self::HTTP_GET === $this->method &&
-                curl_errno($curl_handle) === CURLE_PARTIAL_FILE)) {
-            throw new BCS_RequestCore_Exception('cURL resource: ' . (string) $curl_handle . '; cURL error: ' . curl_error($curl_handle) . ' (' . curl_errno($curl_handle) . ')');
-        }
-        $parsed_response = $this->processResponse($curl_handle, $this->response);
-        curl_close($curl_handle);
-        if ($parse) {
-            return $parsed_response;
-        }
-        return $this->response;
     }
 
     /**
@@ -731,14 +736,14 @@ class BcsRequestcore
         // Initialize any missing options
         $limit = isset($opt['limit']) ? $opt['limit'] : -1;
         // Initialize
-        $handle_list  = $handles;
-        $http         = new $this->request_class();
+        $handle_list = $handles;
+        $http = new $this->request_class();
         $multi_handle = curl_multi_init();
         $handles_post = array();
-        $added        = count($handles);
-        $last_handle  = null;
-        $count        = 0;
-        $i            = 0;
+        $added = count($handles);
+        $last_handle = null;
+        $count = 0;
+        $i = 0;
         // Loop through the cURL handles and add as many as it set by the limit parameter.
         while ($i < $added) {
             if ($limit > 0 && $i >= $limit) {
@@ -763,16 +768,16 @@ class BcsRequestcore
             while ($done = curl_multi_info_read($multi_handle)) {
                 // Since curl_errno() isn't reliable for handles that were in multirequests, we check the 'result' of the info read, which contains the curl error number, (listed here http://curl.haxx.se/libcurl/c/libcurl-errors.html )
                 if ($done['result'] > 0) {
-                    throw new BCS_RequestCore_Exception('cURL resource: ' . (string) $done['handle'] . '; cURL error: ' . curl_error($done['handle']) . ' (' . $done['result'] . ')');
+                    throw new BCS_RequestCore_Exception('cURL resource: ' . (string)$done['handle'] . '; cURL error: ' . curl_error($done['handle']) . ' (' . $done['result'] . ')');
                 } // Because curl_multi_info_read() might return more than one message about a request, we check to see if this request is already in our array of completed requests
-                elseif (!isset($to_process[(int) $done['handle']])) {
-                    $to_process[(int) $done['handle']] = $done;
+                elseif (!isset($to_process[(int)$done['handle']])) {
+                    $to_process[(int)$done['handle']] = $done;
                 }
             }
             // Actually deal with the request
             foreach ($to_process as $pkey => $done) {
-                $response           = $http->processResponse($done['handle'], curl_multi_getcontent($done['handle']));
-                $key                = array_search($done['handle'], $handle_list, true);
+                $response = $http->processResponse($done['handle'], curl_multi_getcontent($done['handle']));
+                $key = array_search($done['handle'], $handle_list, true);
                 $handles_post[$key] = $response;
                 if (count($handles) > 0) {
                     curl_multi_add_handle($multi_handle, array_shift($handles));
@@ -823,6 +828,7 @@ class BcsRequestcore
         return $this->response_code;
     }
 }
+
 /**
  * Container for all response-related methods.
  */
@@ -852,7 +858,7 @@ class BcsResponsecore
     public function __construct($header, $body, $status = null)
     {
         $this->header = $header;
-        $this->body   = $body;
+        $this->body = $body;
         $this->status = $status;
         return $this;
     }
@@ -871,6 +877,7 @@ class BcsResponsecore
         return $this->status === $codes;
     }
 }
+
 /**
  * Default BCS_RequestCore Exception.
  */

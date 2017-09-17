@@ -30,16 +30,90 @@ class Shmop extends Cache
         }
         if (!empty($options)) {
             $options = array(
-                'size'    => C('SHARE_MEM_SIZE'),
-                'temp'    => TEMP_PATH,
+                'size' => C('SHARE_MEM_SIZE'),
+                'temp' => TEMP_PATH,
                 'project' => 's',
-                'length'  => 0,
+                'length' => 0,
             );
         }
-        $this->options           = $options;
+        $this->options = $options;
         $this->options['prefix'] = isset($options['prefix']) ? $options['prefix'] : C('DATA_CACHE_PREFIX');
         $this->options['length'] = isset($options['length']) ? $options['length'] : 0;
-        $this->handler           = $this->_ftok($this->options['project']);
+        $this->handler = $this->_ftok($this->options['project']);
+    }
+
+    /**
+     * 生成IPC key
+     * @access private
+     * @param string $project 项目标识名
+     * @return integer
+     */
+    private function _ftok($project)
+    {
+        if (function_exists('ftok')) {
+            return ftok(__FILE__, $project);
+        }
+
+        if (strtoupper(PHP_OS) == 'WINNT') {
+            $s = stat(__FILE__);
+            return sprintf("%u", (($s['ino'] & 0xffff) | (($s['dev'] & 0xff) << 16) |
+                (($project & 0xff) << 24)));
+        } else {
+            $filename = __FILE__ . (string)$project;
+            for ($key = array(); sizeof($key) < strlen($filename); $key[] = ord(substr($filename, sizeof($key), 1))) ;
+            return dechex(array_sum($key));
+        }
+    }
+
+    /**
+     * 写入缓存
+     * @access public
+     * @param string $name 缓存变量名
+     * @param mixed $value 存储数据
+     * @return boolean
+     */
+    public function set($name, $value)
+    {
+        N('cache_write', 1);
+        $lh = $this->_lock();
+        $val = $this->get();
+        if (!is_array($val)) {
+            $val = array();
+        }
+
+        if (C('DATA_CACHE_COMPRESS') && function_exists('gzcompress')) {
+            //数据压缩
+            $value = gzcompress($value, 3);
+        }
+        $name = $this->options['prefix'] . $name;
+        $val[$name] = $value;
+        $val = serialize($val);
+        if ($this->_write($val, $lh)) {
+            if ($this->options['length'] > 0) {
+                // 记录缓存队列
+                $this->queue($name);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * 共享锁定
+     * @access private
+     * @param string $name 缓存变量名
+     * @return boolean
+     */
+    private function _lock()
+    {
+        if (function_exists('sem_get')) {
+            $fp = sem_get($this->handler, 1, 0600, 1);
+            sem_acquire($fp);
+        } else {
+            $fp = fopen($this->options['temp'] . $this->options['prefix'] . md5($this->handler), 'w');
+            flock($fp, LOCK_EX);
+        }
+        return $fp;
     }
 
     /**
@@ -76,82 +150,6 @@ class Shmop extends Cache
     }
 
     /**
-     * 写入缓存
-     * @access public
-     * @param string $name 缓存变量名
-     * @param mixed $value  存储数据
-     * @return boolean
-     */
-    public function set($name, $value)
-    {
-        N('cache_write', 1);
-        $lh  = $this->_lock();
-        $val = $this->get();
-        if (!is_array($val)) {
-            $val = array();
-        }
-
-        if (C('DATA_CACHE_COMPRESS') && function_exists('gzcompress')) {
-            //数据压缩
-            $value = gzcompress($value, 3);
-        }
-        $name       = $this->options['prefix'] . $name;
-        $val[$name] = $value;
-        $val        = serialize($val);
-        if ($this->_write($val, $lh)) {
-            if ($this->options['length'] > 0) {
-                // 记录缓存队列
-                $this->queue($name);
-            }
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * 删除缓存
-     * @access public
-     * @param string $name 缓存变量名
-     * @return boolean
-     */
-    public function rm($name)
-    {
-        $lh  = $this->_lock();
-        $val = $this->get();
-        if (!is_array($val)) {
-            $val = array();
-        }
-
-        $name = $this->options['prefix'] . $name;
-        unset($val[$name]);
-        $val = serialize($val);
-        return $this->_write($val, $lh);
-    }
-
-    /**
-     * 生成IPC key
-     * @access private
-     * @param string $project 项目标识名
-     * @return integer
-     */
-    private function _ftok($project)
-    {
-        if (function_exists('ftok')) {
-            return ftok(__FILE__, $project);
-        }
-
-        if (strtoupper(PHP_OS) == 'WINNT') {
-            $s = stat(__FILE__);
-            return sprintf("%u", (($s['ino'] & 0xffff) | (($s['dev'] & 0xff) << 16) |
-                (($project & 0xff) << 24)));
-        } else {
-            $filename = __FILE__ . (string) $project;
-            for ($key = array(); sizeof($key) < strlen($filename); $key[] = ord(substr($filename, sizeof($key), 1)));
-            return dechex(array_sum($key));
-        }
-    }
-
-    /**
      * 写入操作
      * @access private
      * @param string $name 缓存变量名
@@ -171,24 +169,6 @@ class Shmop extends Cache
     }
 
     /**
-     * 共享锁定
-     * @access private
-     * @param string $name 缓存变量名
-     * @return boolean
-     */
-    private function _lock()
-    {
-        if (function_exists('sem_get')) {
-            $fp = sem_get($this->handler, 1, 0600, 1);
-            sem_acquire($fp);
-        } else {
-            $fp = fopen($this->options['temp'] . $this->options['prefix'] . md5($this->handler), 'w');
-            flock($fp, LOCK_EX);
-        }
-        return $fp;
-    }
-
-    /**
      * 解除共享锁定
      * @access private
      * @param string $name 缓存变量名
@@ -201,5 +181,25 @@ class Shmop extends Cache
         } else {
             fclose($fp);
         }
+    }
+
+    /**
+     * 删除缓存
+     * @access public
+     * @param string $name 缓存变量名
+     * @return boolean
+     */
+    public function rm($name)
+    {
+        $lh = $this->_lock();
+        $val = $this->get();
+        if (!is_array($val)) {
+            $val = array();
+        }
+
+        $name = $this->options['prefix'] . $name;
+        unset($val[$name]);
+        $val = serialize($val);
+        return $this->_write($val, $lh);
     }
 }

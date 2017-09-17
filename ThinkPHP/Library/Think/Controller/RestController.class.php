@@ -32,7 +32,7 @@ class RestController extends Controller
     protected $defaultType = 'html';
     // REST允许输出的资源类型列表
     protected $allowOutputType = array(
-        'xml'  => 'application/xml',
+        'xml' => 'application/xml',
         'json' => 'application/json',
         'html' => 'text/html',
     );
@@ -63,6 +63,41 @@ class RestController extends Controller
         $this->_method = $method;
 
         parent::__construct();
+    }
+
+    /**
+     * 获取当前请求的Accept头信息
+     * @return string
+     */
+    protected function getAcceptType()
+    {
+        $type = array(
+            'html' => 'text/html,application/xhtml+xml,*/*',
+            'xml' => 'application/xml,text/xml,application/x-xml',
+            'json' => 'application/json,text/x-json,application/jsonrequest,text/json',
+            'js' => 'text/javascript,application/javascript,application/x-javascript',
+            'css' => 'text/css',
+            'rss' => 'application/rss+xml',
+            'yaml' => 'application/x-yaml,text/yaml',
+            'atom' => 'application/atom+xml',
+            'pdf' => 'application/pdf',
+            'text' => 'text/plain',
+            'png' => 'image/png',
+            'jpg' => 'image/jpg,image/jpeg,image/pjpeg',
+            'gif' => 'image/gif',
+            'csv' => 'text/csv',
+        );
+
+        foreach ($type as $key => $val) {
+            $array = explode(',', $val);
+            foreach ($array as $k => $v) {
+                if (array_key_exists('HTTP_ACCEPT', $_SERVER))
+                    if (stristr($_SERVER['HTTP_ACCEPT'], $v)) {
+                        return $key;
+                    }
+            }
+        }
+        return false;
     }
 
     /**
@@ -97,42 +132,22 @@ class RestController extends Controller
         }
     }
 
-    /**
-     * 获取当前请求的Accept头信息
-     * @return string
-     */
-    protected function getAcceptType()
-    {
-        $type = array(
-            'html' => 'text/html,application/xhtml+xml,*/*',
-            'xml'  => 'application/xml,text/xml,application/x-xml',
-            'json' => 'application/json,text/x-json,application/jsonrequest,text/json',
-            'js'   => 'text/javascript,application/javascript,application/x-javascript',
-            'css'  => 'text/css',
-            'rss'  => 'application/rss+xml',
-            'yaml' => 'application/x-yaml,text/yaml',
-            'atom' => 'application/atom+xml',
-            'pdf'  => 'application/pdf',
-            'text' => 'text/plain',
-            'png'  => 'image/png',
-            'jpg'  => 'image/jpg,image/jpeg,image/pjpeg',
-            'gif'  => 'image/gif',
-            'csv'  => 'text/csv',
-        );
+    // 发送Http状态信息
 
-        foreach ($type as $key => $val) {
-            $array = explode(',', $val);
-            foreach ($array as $k => $v) {
-            	if(array_key_exists('HTTP_ACCEPT',$_SERVER))
-	                if (stristr($_SERVER['HTTP_ACCEPT'], $v)) {
-	                    return $key;
-	                }
-            }
-        }
-        return false;
+    /**
+     * 输出返回数据
+     * @access protected
+     * @param mixed $data 要返回的数据
+     * @param String $type 返回类型 JSON XML
+     * @param integer $code HTTP状态
+     * @return void
+     */
+    protected function response($data, $type = '', $code = 200)
+    {
+        $this->sendHttpStatus($code);
+        exit($this->encodeData($data, strtolower($type)));
     }
 
-    // 发送Http状态信息
     protected function sendHttpStatus($code)
     {
         static $_status = array(
@@ -204,13 +219,13 @@ class RestController extends Controller
             return '';
         }
 
-        if('json' == $type) {
+        if ('json' == $type) {
             // 返回JSON数据格式到客户端 包含状态信息
-            if(version_compare(PHP_VERSION,'5.4.0','<')) {
+            if (version_compare(PHP_VERSION, '5.4.0', '<')) {
                 $this->arrayRecursive($data, 'urlencode', true);
                 $data = urldecode(json_encode($data));
             } else {
-                $data = json_encode($data,JSON_UNESCAPED_UNICODE);
+                $data = json_encode($data, JSON_UNESCAPED_UNICODE);
             }
         } elseif ('xml' == $type) {
             // 返回xml格式数据
@@ -226,10 +241,10 @@ class RestController extends Controller
     /**************************************************************
      *
      *    使用特定function对数组中所有元素做处理
-     *    @param  string|array  &$array     要处理的字符串或者数组
-     *    @param  string  $function   要执行的函数
-     *    @return boolean $apply_to_keys_also     是否也应用到key上
-     *    @access protected
+     * @param  string|array &$array 要处理的字符串或者数组
+     * @param  string $function 要执行的函数
+     * @return boolean $apply_to_keys_also     是否也应用到key上
+     * @access protected
      *
      *************************************************************/
     protected function arrayRecursive(&$array, $function, $apply_to_keys_also = false)
@@ -241,7 +256,7 @@ class RestController extends Controller
         foreach ($array as $key => $value) {
             if (is_array($value)) {
                 $this->arrayRecursive($array[$key], $function, $apply_to_keys_also);
-            } elseif(is_string($value)) {
+            } elseif (is_string($value)) {
                 $array[$key] = $function($value);
             }
 
@@ -279,19 +294,5 @@ class RestController extends Controller
             header('Content-Type: ' . $this->allowOutputType[$type] . '; charset=' . $charset);
         }
 
-    }
-
-    /**
-     * 输出返回数据
-     * @access protected
-     * @param mixed $data 要返回的数据
-     * @param String $type 返回类型 JSON XML
-     * @param integer $code HTTP状态
-     * @return void
-     */
-    protected function response($data, $type = '', $code = 200)
-    {
-        $this->sendHttpStatus($code);
-        exit($this->encodeData($data, strtolower($type)));
     }
 }

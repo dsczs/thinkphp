@@ -40,7 +40,7 @@ class GIF
 
             /* 解码GIF图片 */
             try {
-                $de           = new GIFDecoder($src);
+                $de = new GIFDecoder($src);
                 $this->frames = $de->GIFGetFrames();
                 $this->delays = $de->GIFGetDelays();
             } catch (\Exception $e) {
@@ -143,7 +143,7 @@ class GIFEncoder
         $this->LOP = ($GIF_lop > -1) ? $GIF_lop : 0;
         $this->DIS = ($GIF_dis > -1) ? (($GIF_dis < 3) ? $GIF_dis : 3) : 2;
         $this->COL = ($GIF_red > -1 && $GIF_grn > -1 && $GIF_blu > -1) ?
-        ($GIF_red | ($GIF_grn << 8) | ($GIF_blu << 16)) : -1;
+            ($GIF_red | ($GIF_grn << 8) | ($GIF_blu << 16)) : -1;
 
         for ($i = 0; $i < count($GIF_src); $i++) {
             if (strToLower($GIF_mod) == "url") {
@@ -159,16 +159,16 @@ class GIFEncoder
                 exit(0);
             }
             for ($j = (13 + 3 * (2 << (ord($this->BUF[$i]{10}) & 0x07))), $k = true; $k; $j++) {
-                switch ($this->BUF[$i]{ $j}) {
-                case "!":
-                    if ((substr($this->BUF[$i], ($j + 3), 8)) == "NETSCAPE") {
-                        printf("%s: %s ( %s source )!", $this->VER, $this->ERR['ERR03'], ($i + 1));
-                        exit(0);
-                    }
-                    break;
-                case ";":
-                    $k = false;
-                    break;
+                switch ($this->BUF[$i]{$j}) {
+                    case "!":
+                        if ((substr($this->BUF[$i], ($j + 3), 8)) == "NETSCAPE") {
+                            printf("%s: %s ( %s source )!", $this->VER, $this->ERR['ERR03'], ($i + 1));
+                            exit(0);
+                        }
+                        break;
+                    case ";":
+                        $k = false;
+                        break;
                 }
             }
         }
@@ -178,6 +178,7 @@ class GIFEncoder
         }
         $this->GIFAddFooter();
     }
+
     /*
     :::::::::::::::::::::::::::::::::::::::::::::::::::
     ::
@@ -196,12 +197,27 @@ class GIFEncoder
             $this->GIF .= "!\377\13NETSCAPE2.0\3\1" . $this->GIFWord($this->LOP) . "\0";
         }
     }
+
     /*
     :::::::::::::::::::::::::::::::::::::::::::::::::::
     ::
     ::    GIFAddFrames...
     ::
      */
+
+    private function GIFWord($int)
+    {
+
+        return (chr($int & 0xFF) . chr(($int >> 8) & 0xFF));
+    }
+
+    /*
+    :::::::::::::::::::::::::::::::::::::::::::::::::::
+    ::
+    ::    GIFAddFooter...
+    ::
+     */
+
     private function GIFAddFrames($i, $d)
     {
 
@@ -219,7 +235,7 @@ class GIFEncoder
             3 * (2 << (ord($this->BUF[$i]{10}) & 0x07)));
 
         $Locals_ext = "!\xF9\x04" . chr(($this->DIS << 2) + 0) .
-        chr(($d >> 0) & 0xFF) . chr(($d >> 8) & 0xFF) . "\x0\x0";
+            chr(($d >> 0) & 0xFF) . chr(($d >> 8) & 0xFF) . "\x0\x0";
 
         if ($this->COL > -1 && ord($this->BUF[$i]{10}) & 0x80) {
             for ($j = 0; $j < (2 << (ord($this->BUF[$i]{10}) & 0x07)); $j++) {
@@ -229,20 +245,20 @@ class GIFEncoder
                     ord($Locals_rgb{3 * $j + 2}) == (($this->COL >> 0) & 0xFF)
                 ) {
                     $Locals_ext = "!\xF9\x04" . chr(($this->DIS << 2) + 1) .
-                    chr(($d >> 0) & 0xFF) . chr(($d >> 8) & 0xFF) . chr($j) . "\x0";
+                        chr(($d >> 0) & 0xFF) . chr(($d >> 8) & 0xFF) . chr($j) . "\x0";
                     break;
                 }
             }
         }
         switch ($Locals_tmp{0}) {
-        case "!":
-            $Locals_img = substr($Locals_tmp, 8, 10);
-            $Locals_tmp = substr($Locals_tmp, 18, strlen($Locals_tmp) - 18);
-            break;
-        case ",":
-            $Locals_img = substr($Locals_tmp, 0, 10);
-            $Locals_tmp = substr($Locals_tmp, 10, strlen($Locals_tmp) - 10);
-            break;
+            case "!":
+                $Locals_img = substr($Locals_tmp, 8, 10);
+                $Locals_tmp = substr($Locals_tmp, 18, strlen($Locals_tmp) - 18);
+                break;
+            case ",":
+                $Locals_img = substr($Locals_tmp, 0, 10);
+                $Locals_tmp = substr($Locals_tmp, 10, strlen($Locals_tmp) - 10);
+                break;
         }
         if (ord($this->BUF[$i]{10}) & 0x80 && $this->IMG > -1) {
             if ($Global_len == $Locals_len) {
@@ -269,22 +285,14 @@ class GIFEncoder
         }
         $this->IMG = 1;
     }
-    /*
-    :::::::::::::::::::::::::::::::::::::::::::::::::::
-    ::
-    ::    GIFAddFooter...
-    ::
-     */
-    private function GIFAddFooter()
-    {
-        $this->GIF .= ";";
-    }
+
     /*
     :::::::::::::::::::::::::::::::::::::::::::::::::::
     ::
     ::    GIFBlockCompare...
     ::
      */
+
     private function GIFBlockCompare($GlobalBlock, $LocalBlock, $Len)
     {
 
@@ -300,23 +308,26 @@ class GIFEncoder
 
         return (1);
     }
+
     /*
     :::::::::::::::::::::::::::::::::::::::::::::::::::
     ::
     ::    GIFWord...
     ::
      */
-    private function GIFWord($int)
-    {
 
-        return (chr($int & 0xFF) . chr(($int >> 8) & 0xFF));
+    private function GIFAddFooter()
+    {
+        $this->GIF .= ";";
     }
+
     /*
     :::::::::::::::::::::::::::::::::::::::::::::::::::
     ::
     ::    GetAnimation...
     ::
      */
+
     public function GetAnimation()
     {
         return ($this->GIF);
@@ -422,16 +433,38 @@ class GIFDecoder
             }
         }
     }
+
     /*
     :::::::::::::::::::::::::::::::::::::::::::::::::::
     ::
     ::    GIFReadExtension ( )
     ::
      */
+
+    private function GIFGetByte($len)
+    {
+        $this->GIF_buffer = array();
+
+        for ($i = 0; $i < $len; $i++) {
+            if ($this->GIF_bfseek > strlen($this->GIF_stream)) {
+                return 0;
+            }
+            $this->GIF_buffer[] = ord($this->GIF_stream{$this->GIF_bfseek++});
+        }
+        return 1;
+    }
+
+    /*
+    :::::::::::::::::::::::::::::::::::::::::::::::::::
+    ::
+    ::    GIFReadExtension ( )
+    ::
+     */
+
     private function GIFReadExtensions()
     {
         $this->GIFGetByte(1);
-        for (;;) {
+        for (; ;) {
             $this->GIFGetByte(1);
             if (($u = $this->GIF_buffer[0]) == 0x00) {
                 break;
@@ -452,9 +485,29 @@ class GIFDecoder
     /*
     :::::::::::::::::::::::::::::::::::::::::::::::::::
     ::
-    ::    GIFReadExtension ( )
+    ::    GIFGetByte ( $len )
     ::
      */
+
+    /*
+     *
+     *  05.06.2007.
+     *  Made a little modification
+     *
+     *
+    -    function GIFGetByte ( $len ) {
+    -        $this->GIF_buffer = Array ( );
+    -
+    -        for ( $i = 0; $i < $len; $i++ ) {
+    +            if ( $this->GIF_bfseek > strlen ( $this->GIF_stream ) ) {
+    +                return 0;
+    +            }
+    -            $this->GIF_buffer [ ] = ord ( $this->GIF_stream { $this->GIF_bfseek++ } );
+    -        }
+    +        return 1;
+    -    }
+     */
+
     private function GIFReadDescriptor()
     {
         $GIF_screen = array();
@@ -489,7 +542,7 @@ class GIFDecoder
         $this->GIFPutByte($GIF_screen);
         $this->GIFGetByte(1);
         $this->GIFPutByte($this->GIF_buffer);
-        for (;;) {
+        for (; ;) {
             $this->GIFGetByte(1);
             $this->GIFPutByte($this->GIF_buffer);
             if (($u = $this->GIF_buffer[0]) == 0x00) {
@@ -504,55 +557,21 @@ class GIFDecoder
          */
         $this->GIF_arrays[] = $this->GIF_string;
     }
-    /*
-    :::::::::::::::::::::::::::::::::::::::::::::::::::
-    ::
-    ::    GIFGetByte ( $len )
-    ::
-     */
 
-    /*
-     *
-     *  05.06.2007.
-     *  Made a little modification
-     *
-     *
-    -    function GIFGetByte ( $len ) {
-    -        $this->GIF_buffer = Array ( );
-    -
-    -        for ( $i = 0; $i < $len; $i++ ) {
-    +            if ( $this->GIF_bfseek > strlen ( $this->GIF_stream ) ) {
-    +                return 0;
-    +            }
-    -            $this->GIF_buffer [ ] = ord ( $this->GIF_stream { $this->GIF_bfseek++ } );
-    -        }
-    +        return 1;
-    -    }
-     */
-    private function GIFGetByte($len)
-    {
-        $this->GIF_buffer = array();
-
-        for ($i = 0; $i < $len; $i++) {
-            if ($this->GIF_bfseek > strlen($this->GIF_stream)) {
-                return 0;
-            }
-            $this->GIF_buffer[] = ord($this->GIF_stream{$this->GIF_bfseek++});
-        }
-        return 1;
-    }
     /*
     :::::::::::::::::::::::::::::::::::::::::::::::::::
     ::
     ::    GIFPutByte ( $bytes )
     ::
      */
+
     private function GIFPutByte($bytes)
     {
         for ($i = 0; $i < count($bytes); $i++) {
             $this->GIF_string .= chr($bytes[$i]);
         }
     }
+
     /*
     :::::::::::::::::::::::::::::::::::::::::::::::::::
     ::
@@ -566,6 +585,7 @@ class GIFDecoder
     {
         return ($this->GIF_arrays);
     }
+
     /*
     :::::::::::::::::::::::::::::::::::::::::::::::::::
     ::

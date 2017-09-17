@@ -1,11 +1,12 @@
 <?php
+
 namespace Think\Session\Driver;
 
 class Memcache
 {
-    protected $lifeTime    = 3600;
+    protected $lifeTime = 3600;
     protected $sessionName = '';
-    protected $handle      = null;
+    protected $handle = null;
 
     /**
      * 打开Session
@@ -18,12 +19,12 @@ class Memcache
         $this->lifeTime = C('SESSION_EXPIRE') ? C('SESSION_EXPIRE') : $this->lifeTime;
         // $this->sessionName  = $sessName;
         $options = array(
-            'timeout'    => C('SESSION_TIMEOUT') ? C('SESSION_TIMEOUT') : 1,
+            'timeout' => C('SESSION_TIMEOUT') ? C('SESSION_TIMEOUT') : 1,
             'persistent' => C('SESSION_PERSISTENT') ? C('SESSION_PERSISTENT') : 0,
         );
         $this->handle = new \Memcache;
-        $hosts        = explode(',', C('MEMCACHE_HOST'));
-        $ports        = explode(',', C('MEMCACHE_PORT'));
+        $hosts = explode(',', C('MEMCACHE_HOST'));
+        $ports = explode(',', C('MEMCACHE_PORT'));
         foreach ($hosts as $i => $host) {
             $port = isset($ports[$i]) ? $ports[$i] : $ports[0];
             $this->handle->addServer($host, $port, true, 1, $options['timeout']);
@@ -40,6 +41,16 @@ class Memcache
         $this->gc(ini_get('session.gc_maxlifetime'));
         $this->handle->close();
         $this->handle = null;
+        return true;
+    }
+
+    /**
+     * Session 垃圾回收
+     * @access public
+     * @param string $sessMaxLifeTime
+     */
+    public function gc($sessMaxLifeTime)
+    {
         return true;
     }
 
@@ -72,15 +83,5 @@ class Memcache
     public function destroy($sessID)
     {
         return $this->handle->delete($this->sessionName . $sessID);
-    }
-
-    /**
-     * Session 垃圾回收
-     * @access public
-     * @param string $sessMaxLifeTime
-     */
-    public function gc($sessMaxLifeTime)
-    {
-        return true;
     }
 }

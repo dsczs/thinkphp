@@ -18,6 +18,24 @@ class App
 {
 
     /**
+     * 运行应用实例 入口文件使用的快捷方法
+     * @access public
+     * @return void
+     */
+    public static function run()
+    {
+        App::init();
+        // Session初始化
+        if (!IS_CLI) {
+            session(C('SESSION_OPTIONS'));
+        }
+        // 记录应用初始化时间
+        G('initTime');
+        App::exec();
+        return;
+    }
+
+    /**
      * 应用程序初始化
      * @access public
      * @return void
@@ -101,7 +119,7 @@ class App
                         default:
                             $vars = $_GET;
                     }
-                    $params         = $method->getParameters();
+                    $params = $method->getParameters();
                     $paramsBindType = C('URL_PARAMS_BIND_TYPE');
                     foreach ($params as $param) {
                         $name = $param->getName();
@@ -139,24 +157,6 @@ class App
             $method = new \ReflectionMethod($module, '__call');
             $method->invokeArgs($module, array($action, ''));
         }
-        return;
-    }
-
-    /**
-     * 运行应用实例 入口文件使用的快捷方法
-     * @access public
-     * @return void
-     */
-    public static function run()
-    {
-        App::init();
-        // Session初始化
-        if (!IS_CLI) {
-            session(C('SESSION_OPTIONS'));
-        }
-        // 记录应用初始化时间
-        G('initTime');
-        App::exec();
         return;
     }
 

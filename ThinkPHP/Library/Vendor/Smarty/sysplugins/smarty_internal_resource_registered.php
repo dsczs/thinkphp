@@ -17,16 +17,17 @@
  * @subpackage TemplateResources
  * @deprecated
  */
-class Smarty_Internal_Resource_Registered extends Smarty_Resource {
+class Smarty_Internal_Resource_Registered extends Smarty_Resource
+{
 
     /**
      * populate Source Object with meta data from Resource
      *
-     * @param Smarty_Template_Source   $source    source object
+     * @param Smarty_Template_Source $source source object
      * @param Smarty_Internal_Template $_template template object
      * @return void
      */
-    public function populate(Smarty_Template_Source $source, Smarty_Internal_Template $_template=null)
+    public function populate(Smarty_Template_Source $source, Smarty_Internal_Template $_template = null)
     {
         $source->filepath = $source->type . ':' . $source->name;
         $source->uid = sha1($source->filepath);
@@ -34,18 +35,6 @@ class Smarty_Internal_Resource_Registered extends Smarty_Resource {
             $source->timestamp = $this->getTemplateTimestamp($source);
             $source->exists = !!$source->timestamp;
         }
-    }
-
-    /**
-     * populate Source Object with timestamp and exists from Resource
-     *
-     * @param Smarty_Template_Source $source source object
-     * @return void
-     */
-    public function populateTimestamp(Smarty_Template_Source $source)
-    {
-        $source->timestamp = $this->getTemplateTimestamp($source);
-        $source->exists = !!$source->timestamp;
     }
 
     /**
@@ -59,7 +48,19 @@ class Smarty_Internal_Resource_Registered extends Smarty_Resource {
         // return timestamp
         $time_stamp = false;
         call_user_func_array($source->smarty->registered_resources[$source->type][0][1], array($source->name, &$time_stamp, $source->smarty));
-        return is_numeric($time_stamp) ? (int) $time_stamp : $time_stamp;
+        return is_numeric($time_stamp) ? (int)$time_stamp : $time_stamp;
+    }
+
+    /**
+     * populate Source Object with timestamp and exists from Resource
+     *
+     * @param Smarty_Template_Source $source source object
+     * @return void
+     */
+    public function populateTimestamp(Smarty_Template_Source $source)
+    {
+        $source->timestamp = $this->getTemplateTimestamp($source);
+        $source->exists = !!$source->timestamp;
     }
 
     /**

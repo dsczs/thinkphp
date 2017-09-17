@@ -35,7 +35,7 @@ class Local
 
     /**
      * 检测上传根目录
-     * @param string $rootpath   根目录
+     * @param string $rootpath 根目录
      * @return boolean true-检测通过，false-检测失败
      */
     public function checkRootPath($rootpath)
@@ -70,8 +70,28 @@ class Local
     }
 
     /**
+     * 创建目录
+     * @param  string $savepath 要创建的目录
+     * @return boolean          创建状态，true-成功，false-失败
+     */
+    public function mkdir($savepath)
+    {
+        $dir = $this->rootPath . $savepath;
+        if (is_dir($dir)) {
+            return true;
+        }
+
+        if (mkdir($dir, 0777, true)) {
+            return true;
+        } else {
+            $this->error = "目录 {$savepath} 创建失败！";
+            return false;
+        }
+    }
+
+    /**
      * 保存指定文件
-     * @param  array   $file    保存的文件信息
+     * @param  array $file 保存的文件信息
      * @param  boolean $replace 同名文件是否覆盖
      * @return boolean          保存状态，true-成功，false-失败
      */
@@ -92,26 +112,6 @@ class Local
         }
 
         return true;
-    }
-
-    /**
-     * 创建目录
-     * @param  string $savepath 要创建的目录
-     * @return boolean          创建状态，true-成功，false-失败
-     */
-    public function mkdir($savepath)
-    {
-        $dir = $this->rootPath . $savepath;
-        if (is_dir($dir)) {
-            return true;
-        }
-
-        if (mkdir($dir, 0777, true)) {
-            return true;
-        } else {
-            $this->error = "目录 {$savepath} 创建失败！";
-            return false;
-        }
     }
 
     /**

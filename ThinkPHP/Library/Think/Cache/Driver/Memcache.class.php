@@ -30,20 +30,21 @@ class Memcache extends Cache
         }
 
         $options = array_merge(array(
-            'host'       => C('MEMCACHE_HOST') ?: '127.0.0.1',
-            'port'       => C('MEMCACHE_PORT') ?: 11211,
-            'timeout'    => C('DATA_CACHE_TIMEOUT') ?: false,
+            'host' => C('MEMCACHE_HOST') ?: '127.0.0.1',
+            'port' => C('MEMCACHE_PORT') ?: 11211,
+            'timeout' => C('DATA_CACHE_TIMEOUT') ?: false,
             'persistent' => false,
         ), $options);
 
-        $this->options           = $options;
+        $this->options = $options;
         $this->options['expire'] = isset($options['expire']) ? $options['expire'] : C('DATA_CACHE_TIME');
         $this->options['prefix'] = isset($options['prefix']) ? $options['prefix'] : C('DATA_CACHE_PREFIX');
         $this->options['length'] = isset($options['length']) ? $options['length'] : 0;
-        $func                    = $options['persistent'] ? 'pconnect' : 'connect';
-        $this->handler           = new \Memcache; false === $options['timeout'] ?
-        $this->handler->$func($options['host'], $options['port']) :
-        $this->handler->$func($options['host'], $options['port'], $options['timeout']);
+        $func = $options['persistent'] ? 'pconnect' : 'connect';
+        $this->handler = new \Memcache;
+        false === $options['timeout'] ?
+            $this->handler->$func($options['host'], $options['port']) :
+            $this->handler->$func($options['host'], $options['port'], $options['timeout']);
     }
 
     /**
@@ -62,8 +63,8 @@ class Memcache extends Cache
      * 写入缓存
      * @access public
      * @param string $name 缓存变量名
-     * @param mixed $value  存储数据
-     * @param integer $expire  有效时间（秒）
+     * @param mixed $value 存储数据
+     * @param integer $expire 有效时间（秒）
      * @return boolean
      */
     public function set($name, $value, $expire = null)
@@ -93,8 +94,8 @@ class Memcache extends Cache
     {
         $name = $this->options['prefix'] . $name;
         return false === $ttl ?
-        $this->handler->delete($name) :
-        $this->handler->delete($name, $ttl);
+            $this->handler->delete($name) :
+            $this->handler->delete($name, $ttl);
     }
 
     /**

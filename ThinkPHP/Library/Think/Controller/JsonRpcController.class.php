@@ -13,7 +13,7 @@ namespace Think\Controller;
 /**
  * ThinkPHP JsonRPC控制器类
  */
-use jsonRPCServer as jsonRPCServer;
+
 class JsonRpcController
 {
 
@@ -42,5 +42,6 @@ class JsonRpcController
      * @return mixed
      */
     public function __call($method, $args)
-    {}
+    {
+    }
 }
